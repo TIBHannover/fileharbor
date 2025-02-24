@@ -1,0 +1,7 @@
+*
+!db/
+!examples/
+!examples/*
+!elasticsearch/
+!qdrant/
+!.gitignore

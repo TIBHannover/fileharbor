@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package iart.indexer;
+
+message ImageData {
+  bytes content = 2;
+  string type = 3;
+}
+
+message StringData { string text = 2; }
+
+message Concept {
+  string concept = 1;
+  string type = 2;
+  float prob = 3;
+}
+
+message ClassifierResult {
+  string plugin = 1;
+  repeated Concept concepts = 2;
+}
+
+message BinaryFeature { string binary = 1; }
+
+message Feature {
+  string type = 1;
+  repeated int32 shape = 2;
+  repeated float feature = 3;
+}
+
+message BoundingBox {
+  float x = 1;
+  float y = 2;
+  float w = 3;
+  float h = 4;
+  float score = 5;
+}
+
+enum PoseType {
+  POSE_TYPE_COCO = 0;
+}
+
+message Pose {
+  PoseType type = 1;
+  repeated float x = 2;
+  repeated float y = 3;
+  repeated float scores = 4;
+}
+
+message PluginData {
+  string id = 1;
+  string name = 2;
+  oneof data {
+    ImageData image = 3;
+    StringData string = 4;
+    ClassifierResult classifier = 5;
+    Feature feature = 6;
+    BinaryFeature binary_eature = 7;
+    BoundingBox bounding_box = 8;
+    Pose pose = 9;
+  }
+}
+
+enum PluginDataType {
+  UNKOWN_DATA = 0;
+  VIDEO_DATA = 1;
+  IMAGE_DATA = 2;
+  BBOXES_DATA = 3;
+  AUDIO_DATA = 4;
+  SCALAR_DATA = 5;
+  SHOTS_DATA = 6;
+  IMAGES_DATA = 7;
+  LIST_DATA = 8;
+  RGB_DATA = 9;
+  HIST_DATA = 10;
+  RGB_HIST_DATA = 11;
+  ANNOTATION_DATA = 12;
+  IMAGE_EMBEDDING_DATA = 13;
+  TEXT_EMBEDDING_DATA = 14;
+  KPSS_DATA = 15;
+  FACES_DATA = 16;
+  CONTAINER_DATA = 17;
+  VIDEO_TEMPORAL_EMBEDDING_DATA = 18;
+  STRING_DATA = 19;
+
+  FACE_CLUSTER_DATA = 20;
+  PLACE_CLUSTER_DATA = 21;
+  PLACES_DATA = 22;
+
+  CLUSTER_DATA = 23;
+  META_DATA = 24;
+}

@@ -1,0 +1,124 @@
+.introjs-overlay {
+  background: rgba(33, 33, 33, 0.46);
+  transition: opacity .15s linear;
+  z-index: 99999999 !important;
+  opacity: 0 !important;
+}
+
+.introjs-tooltip-header,
+.introjs-bullets {
+  display: none;
+}
+
+.introjs-tooltipbuttons {
+  border-top: none;
+}
+
+.introjs-tooltip {
+  padding: 16px;
+}
+
+.introjs-tooltiptext,
+.introjs-tooltipbuttons {
+  padding: 0;
+}
+
+.introjs-tooltiptext {
+  padding-bottom: 16px;
+  line-height: 1.5;
+  color: #1d3557;
+  hyphens: auto;
+}
+
+.introjs-tooltip,
+.introjs-helperLayer {
+  box-shadow: 0 0 10px rgba(33, 33, 33, 0.46) !important;
+}
+
+.introjs-helperLayer {
+  background: transparent;
+  border: none;
+}
+
+.introjs-tooltip.move-top8,
+.introjs-helperLayer.move-top8 {
+  margin-top: -8px;
+}
+
+.introjs-tooltip.move-top12,
+.introjs-helperLayer.move-top12 {
+  margin-top: -12px;
+}
+
+.introjs-tooltip.introjs-right.move-right {
+  margin-left: 50px;
+}
+
+.introjs-helperLayer:before {
+  box-shadow: 0 0 0 1000em rgba(33, 33, 33, 0.46);
+  border-radius: 0.5em;
+  position: absolute;
+  height: inherit;
+  width: inherit;
+  content: '';
+  opacity: 1;
+}
+
+.introjs-helperLayer:after {
+  position: absolute;
+  z-index: 1000;
+  content: '';
+  bottom: 0;
+  right: 0;
+  left: 0;
+  top: 0;
+}
+
+.introjs-button {
+  font: normal normal normal 24px/1 Material Design Icons;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: auto;
+  line-height: inherit;
+  font-size: 0;
+}
+
+.introjs-button.introjs-nextbutton::before,
+.introjs-button.introjs-prevbutton::before {
+  font-size: 24px;
+}
+
+.introjs-button.introjs-nextbutton::before {
+  content: "\F0142";
+}
+
+.introjs-button.introjs-prevbutton::before {
+  content: "\F0141";
+}
+
+.introjs-button.introjs-nextbutton {
+  background-color: #e63946 !important;
+  color: #fff;
+}
+
+.introjs-button:active,
+.introjs-button:focus {
+  box-shadow: none;
+  border: none;
+}
+
+.introjs-button {
+  letter-spacing: .0892857143em;
+  background-color: transparent;
+  justify-content: center;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 50%;
+  margin-left: 4px;
+  font-weight: 500;
+  flex: 0 0 auto;
+  float: inherit;
+  border: none;
+  height: 36px;
+  width: 36px;
+  padding: 0;
+}

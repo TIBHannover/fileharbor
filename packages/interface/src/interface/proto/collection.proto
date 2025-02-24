@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package fileharbor;
+
+message IndexDefinition {
+  string name = 1;
+  int32 size = 2;
+  string distance = 3;
+}
+
+message CollectionAddRequest {
+  string name = 1;
+  repeated IndexDefinition indexes = 3;
+}
+message CollectionAddResponse {}
+message CollectionDeleteRequest { string name = 1; }
+message CollectionDeleteResponse {}
+message CollectionListRequest {}
+message CollectionListResponse {}
+message QueryRequest {}
+message QueryResponse {}
+
+service Collection {
+  rpc add(CollectionAddRequest) returns (CollectionAddResponse) {}
+  rpc delete (CollectionDeleteRequest) returns (CollectionDeleteResponse) {}
+  rpc list(CollectionListRequest) returns (CollectionListResponse) {}
+  rpc query(QueryRequest) returns (QueryResponse) {}
+}

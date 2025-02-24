@@ -1,0 +1,129 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.13.2
+    ports:
+      - "127.0.0.1:6333:6333"
+    volumes:
+      - type: bind
+        source: ./data/qdrant
+        target: /qdrant/storage
+
+  analyser:
+    image: fileharbor/analyser
+    build:
+      context: ./
+
+    volumes:
+      - type: bind
+        source: ./data/
+        target: /data/
+      - type: bind
+        source: ./data/venv
+        target: /fileharbor/.venv
+      - type: bind
+        source: ./data/ray/
+        target: /tmp/ray/
+      - type: bind
+        source: ./data/models/
+        target: /models/
+      - type: bind
+        source: ./analyser
+        target: /fileharbor/analyser
+      - type: bind
+        source: ./packages
+        target: /fileharbor/packages
+      - type: bind
+        source: ./backend
+        target: /fileharbor/backend
+      - type: bind
+        source: ./pyproject.toml
+        target: /fileharbor/pyproject.toml
+      - type: bind
+        source: ./.python-version
+        target: /fileharbor/.python-version
+    working_dir: /fileharbor/
+    environment:
+      - HF_HOME=/models
+    command: uv run --package analyser analyser/src/analyser/server.py -v -c analyser/config.json
+
+  # postgres:
+  #   image: postgres:13.2
+  #   volumes:
+  #     - ./data/db/:/var/lib/postgresql/data
+  #   environment:
+  #     - POSTGRES_DB=fileharbor
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=postgres
+  #     - PGDATA=/var/lib/postgresql/data/data/
+  #   ports:
+  #     - "127.0.0.1:5432:5432"
+
+  # memcached:
+  #   image: memcached:1.6.10-buster
+  #   command: -I 32m
+  #   ports:
+  #     - "127.0.0.1:11211:11211"
+
+  # backend:
+  #   image: fileharbor/backend
+  #   build:
+  #     context: ./backend
+  #   network_mode: "host"
+  #   volumes:
+  #     - type: bind
+  #       source: ./data/
+  #       target: /data
+  #     - type: bind
+  #       source: ./backend/
+  #       target: /backend
+  #     - type: bind
+  #       source: ./indexer/
+  #       target: /indexer
+  #   working_dir: /backend/src/fileharbor_backend
+  #   environment:
+  #     - POETRY_VIRTUALENVS_CREATE=False
+  #     - PYTHONPATH=/backend/src/:/indexer/src/
+  #   command: python3 manage.py runserver 0.0.0.0:8000
+  #   depends_on:
+  #     - postgres
+  #     - memcached
+
+  # celery:
+  #   image: fileharbor/backend
+  #   build:
+  #     context: ./backend
+  #   network_mode: "host"
+  #   volumes:
+  #     - type: bind
+  #       source: ./data/
+  #       target: /data
+  #     - type: bind
+  #       source: ./backend/
+  #       target: /backend
+  #     - type: bind
+  #       source: ./indexer/
+  #       target: /indexer
+  #   working_dir: /backend/src/fileharbor_backend
+  #   environment:
+  #     - GRPC_ENABLE_FORK_SUPPORT=1
+  #     - GRPC_POLL_STRATEGY=poll
+  #     - POETRY_VIRTUALENVS_CREATE=False
+  #     - PYTHONPATH=/backend/src/:/indexer/src/
+  #   command: celery -A fileharbor worker -l INFO
+  #   depends_on:
+  #     - postgres
+  #     - memcached
+
+  # frontend:
+  #   image: fileharbor/frontend
+  #   build:
+  #     context: ./frontend
+  #   network_mode: "host"
+  #   volumes:
+  #     - type: bind
+  #       source: ./frontend/
+  #       target: /frontend
+  #     - type: bind
+  #       source: ./data/
+  #       target: /data
+  #   working_dir: /frontend

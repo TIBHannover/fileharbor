@@ -1,0 +1,23 @@
+[project]
+name = "fileharbor-tib"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "h5py>=3.12.1",
+    "packaging>=24.2",
+    "pip>=25.0.1",
+    "protobuf>=5.29.3",
+    "qdrant-client>=1.13.2",
+    "ray[serve]==2.42.0",
+    "requests>=2.32.3",
+    "scikit-learn>=1.6.1",
+    "torch>=2.6.0",
+    "tqdm>=4.67.1",
+    "transformers>=4.48.3",
+    "valkey>=6.1.0",
+]
+
+[tool.uv.workspace]
+members = ["packages/*", "analyser", "backend"]

@@ -1,0 +1,263 @@
+{
+    "global": {
+        "tmp_dir": "/tmp"
+    },
+    "cache": {
+        "cache_dir": "/tmp/cache"
+    },
+    "data": {
+        "data_dir": "/data/data"
+    },
+    "inference_server": {
+        "type": "ray",
+        "params": {}
+    },
+    "grpc": {
+        "port": 50051
+    },
+    "elasticsearch": {
+        "host": "localhost",
+        "port": 9200,
+        "index": "iart",
+        "suggester": "suggester"
+    },
+    "compute_plugins": [
+        {
+            "type": "ClipClassification",
+            "output": "clip_text",
+            "params": {
+                "inference": {
+                    "requirements": []
+                }
+            }
+        },
+        {
+            "type": "ClipTextEmbeddingFeature",
+            "output": "clip_text",
+            "params": {
+                "inference": {
+                    "requirements": [
+                        "torch",
+                        "open_clip_torch",
+                        "imageio",
+                        "transformers"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "ClipImageEmbeddingFeature",
+            "output": "clip_image",
+            "params": {
+                "inference": {
+                    "requirements": [
+                        "torch",
+                        "open_clip_torch",
+                        "imageio",
+                        "transformers"
+                    ]
+                },
+                "multicrop": true,
+                "max_dim": null,
+                "min_dim": 244
+            }
+        },
+        {
+            "type": "ImageNetInceptionFeature",
+            "output": "image_net_inception",
+            "params": {
+                "inference": {
+                    "requirements": [
+                        "torch",
+                        "imageio"
+                    ]
+                },
+                "model_name": "imagenet_inception",
+                "model_device": "cpu",
+                "model_file": "/data/models/imagenet_inception/imagenet_resnet_emb.pt",
+                "pca_model_name": "imagenet_inception_pca_256",
+                "pca_model_file": "/data/models/imagenet_inception/PCA_PARAMS.pkl",
+                "multicrop": true,
+                "max_dim": null,
+                "min_dim": 244
+            }
+        },
+        {
+            "type": "YUVHistogramFeature",
+            "output": "yuv_histogram",
+            "params": {
+                "inference": {
+                    "requirements": [
+                        "torch",
+                        "imageio"
+                    ]
+                },
+                "model_name": "yuv_histogram",
+                "model_file": "/data/models/yuv_histogram/yuv_histogram.pt",
+                "max_dim": 128,
+                "min_dim": 244
+            }
+        },
+        {
+            "type": "ByolEmbeddingFeature",
+            "output": "byol_wikipedia",
+            "params": {
+                "inference": {
+                    "requirements": [
+                        "torch",
+                        "imageio"
+                    ]
+                },
+                "model_name": "byol_wikipedia",
+                "model_file": "/data/models/byol_embedding/byol_wikipedia.pt",
+                "model_device": "cpu"
+            }
+        },
+        {
+            "type": "KaggleResnetFeature",
+            "output": "KaggleResnetFeature",
+            "params": {
+                "inference": {
+                    "requirements": [
+                        "torch",
+                        "imageio"
+                    ]
+                },
+                "model_name": "kaggle_resnet_embedding",
+                "model_device": "cpu",
+                "model_file": "/data/models/kaggle_embedding/kaggle_embedding.pt",
+                "mapping_file": "/data/models/kaggle_embedding/mapping.jsonl",
+                "multicrop": true,
+                "max_dim": null,
+                "min_dim": 244
+            }
+        },
+        {
+            "type": "IconclassCLIPClassifier",
+            "output": "IconclassCLIPClassifier",
+            "params": {
+                "inference": {
+                    "requirements": [
+                        "torch",
+                        "imageio"
+                    ]
+                },
+                "model_name": "iconclass_clip",
+                "model_device": "cpu",
+                "model_file": "/data/models/iconclass_clip/clip_image.pt",
+                "txt_embedding_file": "/data/models/iconclass_clip/text_kw_txt_embedding.pl",
+                "multicrop": true,
+                "max_dim": null,
+                "min_dim": 244,
+                "threshold": 1e-3,
+                "k": 25
+            }
+        },
+        {
+            "type": "IconclassLSTMClassifier",
+            "output": "IconclassLSTMClassifier",
+            "params": {
+                "inference": {
+                    "requirements": [
+                        "torch",
+                        "imageio"
+                    ]
+                },
+                "model_name": "iconclass_lstm",
+                "model_device": "cpu",
+                "model_file": "/data/models/iconclass_lstm/iconclass_lstm.pt",
+                "mapping_file": "/data/models/iconclass_lstm/labels.jsonl",
+                "classifier_file": "/data/models/iconclass_lstm/classifiers.jsonl",
+                "multicrop": true,
+                "max_dim": null,
+                "min_dim": 244,
+                "threshold": 1e-3
+            }
+        },
+        {
+            "type": "KaggleResnetClassifier",
+            "output": "KaggleResnetClassifier",
+            "params": {
+                "inference": {
+                    "requirements": [
+                        "torch",
+                        "imageio"
+                    ]
+                },
+                "model_name": "kaggle_resnet_classifier",
+                "model_device": "cpu",
+                "model_file": "/data/models/kaggle_classifier/kaggle_classifier.pt",
+                "mapping_file": "/data/models/kaggle_classifier/mapping.jsonl",
+                "multicrop": true,
+                "max_dim": null,
+                "min_dim": 244,
+                "threshold": 0.4
+            }
+        },
+        {
+            "type": "IMet2020ResnetClassifier",
+            "output": "i_met2020_resnet_classifier",
+            "params": {
+                "inference": {
+                    "requirements": [
+                        "torch",
+                        "imageio"
+                    ]
+                },
+                "model_name": "imet2020_resnet",
+                "model_device": "cpu",
+                "model_file": "/data/models/imet2020/imet2020_resnet.pt",
+                "mapping_file": "/data/models/imet2020/labels.csv",
+                "remove_prefix": true,
+                "multicrop": true,
+                "max_dim": null,
+                "min_dim": 244,
+                "threshold": 0.25
+            }
+        },
+        {
+            "type": "ImageNetResnetClassifier",
+            "output": "image_net_resnet_inception",
+            "params": {
+                "inference": {
+                    "requirements": [
+                        "torch",
+                        "imageio"
+                    ]
+                },
+                "model_name": "imagenet_resnet",
+                "model_device": "cpu",
+                "model_file": "/data/models/imagenet_resnet/imagenet_resnet.pt",
+                "mapping_file": "/data/models/imagenet_resnet/imagenet_mapping.json",
+                "multicrop": true,
+                "max_dim": null,
+                "min_dim": 244,
+                "threshold": 0.5
+            }
+        }
+    ],
+    "indexes": [
+        {
+            "type": "QDrantIndexer",
+            "params": {}
+        }
+    ],
+    "mappings": [
+        {
+            "type": "FeatureCosineMapping",
+            "params": {}
+        },
+        {
+            "type": "FeatureL2Mapping",
+            "params": {}
+        },
+        {
+            "type": "UMapMapping",
+            "params": {
+                "random_state": 42,
+                "n_neighbors": 3,
+                "min_dist": 0.1
+            }
+        }
+    ]
+}
