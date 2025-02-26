@@ -223,50 +223,68 @@ class QDrantIndexer(IndexerPlugin):
                 logging.error(f"[QDrantIndexer] Insert points exception {repr(e)}")
                 continue
 
-    def search(
-        self, queries, collections=None, include_default_collection=True, size=100
-    ):
+    def search(self, queries, filters, size=100):
 
-        if include_default_collection:
-            collections = [
-                "aa51afededa94c64b41c421df478f0a4",
-                "25acc1c22c7a4014b56306dc685d00a2",
-                "0cfa4f9bdf064188b7473a5a304ee59d",
-                "782addafc7ee41d5b0b2a9334657af34",
-                "5061f00bb06b49308d7f22c2c4641e5d",
-            ]
-
-        # print(f"############################# {collections} {include_default_collection}", flush=True)
-        existing_collections = [
-            x.name for x in self.client.get_collections().collections
-        ]
         results = []
-        for collection_id in collections:
-            if (
-                collection_id + "_342ffe349e8f4addb0c2b49ffe467f27"
-                not in existing_collections
-            ):
-                logging.error(f"[QDrantIndexer] Unknown collection {collection_id}")
-                continue
-            for q in queries:
-                # print(collection_id, flush=True)
-                feature_name = q["plugin"] + "." + q["type"]
-                feature_value = (q["value"] / np.linalg.norm(q["value"], 2)).tolist()
-                result = self.client.search(
-                    collection_name=collection_id + "_342ffe349e8f4addb0c2b49ffe467f27",
-                    query_vector=(feature_name, feature_value),
-                    limit=size,
-                    search_params=models.SearchParams(hnsw_ef=512, exact=True),
-                )
-                results.extend(result)
-                # print(f"++++++++++++++++ {result}", flush=True)
+
+        must = [
+            models.FieldCondition(
+                key=f["field"], match=models.MatchValue(value=f["query"])
+            )
+            for f in filters
+            if f["flag"] == "MUST"
+        ]
+        if len(must) == 0:
+            must = None
+        should = [
+            models.FieldCondition(
+                key=f["field"], match=models.MatchValue(value=f["query"])
+            )
+            for f in filters
+            if f["flag"] == "SHOULD"
+        ]
+        if len(should) == 0:
+            should = None
+        must_not = [
+            models.FieldCondition(
+                key=f["field"], match=models.MatchValue(value=f["query"])
+            )
+            for f in filters
+            if f["flag"] == "NOT"
+        ]
+        if len(must_not) == 0:
+            must_not = None
+
+        for q in queries:
+            # print(collection_id, flush=True)
+            result = self.client.search(
+                collection_name="default",
+                query_vector=models.NamedVector(
+                    name=q["index_name"], vector=q["value"]
+                ),
+                query_filter=models.Filter(must=must, should=should, must_not=must_not),
+                limit=size,
+                with_payload=True,
+                with_vectors=True,
+                # search_params=models.SearchParams(hnsw_ef=512, exact=True),
+            )
+            results.extend(result)
+            # print(f"++++++++++++++++ {result}", flush=True)
+
+        for x in results[:1]:
+            print(x, flush=True)
 
         results = sorted(results, key=lambda x: -x.score)
-        for x in results[:10]:
-            print(dir(x.id), flush=True)
-            print(x, flush=True)
-        results = [uuid.UUID(x.id).hex for x in results]
-        for x in results[:10]:
+        results = [
+            {
+                "id": uuid.UUID(x.id).hex,
+                "meta": x.payload,
+                "score": x.score,
+                "features": [],
+            }
+            for x in results
+        ]
+        for x in results[:2]:
             print(x, flush=True)
 
         return results

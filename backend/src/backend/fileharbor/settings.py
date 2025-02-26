@@ -27,18 +27,8 @@ DEBUG = True
 # FORCE_SCRIPT_NAME = "/"
 FORCE_SCRIPT_NAME = "/"
 
-ALLOWED_HOSTS = [
-    "iart21.labs.tib.eu",
-    "labs.tib.eu/iart",
-    "iart01.develop.labs.tib.eu",
-    "labs.develop.tib.eu/iart",
-    "127.0.0.1",
-    "localhost",
-    "localhost:8080",
-    "http://localhost:8080",
-    "http://localhost"
-]
-CSRF_TRUSTED_ORIGINS = ['http://localhost:8080','http://localhost']
+ALLOWED_HOSTS = ["localhost"]
+CSRF_TRUSTED_ORIGINS = ["http://localhost", "https://localhost"]
 
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
@@ -54,12 +44,14 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "django_rename_app",
+    # "django_rename_app",
     # 'mozilla_django_oidc',
 ]
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.SessionAuthentication",),
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework.authentication.SessionAuthentication",
+    ),
     "EXCEPTION_HANDLER": "backend.exceptions.utils.custom_exception_handler",
 }
 
@@ -68,14 +60,14 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
+    # "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     # "mozilla_django_oidc.middleware.SessionRefresh",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "iart.urls"
+ROOT_URLCONF = "fileharbor.urls"
 
 TEMPLATES = [
     {
@@ -93,12 +85,12 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "iart.wsgi.application"
+WSGI_APPLICATION = "fileharbor.wsgi.application"
 
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.memcached.PyMemcacheCache",
-        "LOCATION": "127.0.0.1:11211",
+        "LOCATION": "memcached:11211",
         "TIMEOUT": 60 * 60 * 24,
     }
 }
@@ -109,19 +101,19 @@ CACHES = {
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "iart",
+        "NAME": "fileharbor",
         "USER": "postgres",
         "PASSWORD": "postgres",
-        "HOST": "localhost",
+        "HOST": "postgres",
         "PORT": 5432,
     }
 }
-AUTH_USER_MODEL = 'backend.CustomUser'
+AUTH_USER_MODEL = "backend.CustomUser"
 
 # Open ID login
 AUTHENTICATION_BACKENDS = (
     # 'iart.oidc_authentication_backend.OIDCAB_USERNAME',
-    'django.contrib.auth.backends.ModelBackend'
+    "django.contrib.auth.backends.ModelBackend"
 )
 # OIDC_RP_CLIENT_ID = 'iart'
 # OIDC_RP_CLIENT_SECRET = ''
@@ -178,10 +170,7 @@ LOGGING = {
             "handlers": ["console"],
             "level": "DEBUG",
         },
-        'mozilla_django_oidc': {
-            'handlers': ['console'],
-            'level': 'INFO'
-        },
+        # "mozilla_django_oidc": {"handlers": ["console"], "level": "INFO"},
     },
 }
 
@@ -208,7 +197,7 @@ IMAGE_EXT = "jpg"
 MEDIA_URL = FORCE_SCRIPT_NAME + "media/"
 UPLOAD_URL = FORCE_SCRIPT_NAME + "upload/"
 
-GRPC_HOST = "localhost"
+GRPC_HOST = "analyser"
 GRPC_PORT = 50051
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

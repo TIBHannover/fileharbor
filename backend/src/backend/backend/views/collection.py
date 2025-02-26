@@ -31,7 +31,7 @@ from backend.utils import (
 if settings.INDEXER_PATH is not None:
     sys.path.append(settings.INDEXER_PATH)
 
-from iart_indexer import indexer_pb2, indexer_pb2_grpc
+from interface import analyser_pb2, analyser_pb2_grpc
 
 
 logger = logging.getLogger(__name__)
@@ -339,7 +339,9 @@ class CollectionList(APIView):
             raise APIException("not_authenticated")
 
         try:
-            user_collections = Collection.objects.filter(user=request.user).annotate(count=Count("image"))
+            user_collections = Collection.objects.filter(user=request.user).annotate(
+                count=Count("image")
+            )
 
             collections = [
                 {
@@ -392,8 +394,8 @@ class CollectionRemove(RPCView):
             images.delete()
             collection.delete()
 
-            stub = indexer_pb2_grpc.IndexerStub(self.channel)
-            request = indexer_pb2.CollectionDeleteRequest(id=hash_id)
+            stub = analyser_pb2_grpc.IndexerStub(self.channel)
+            request = analyser_pb2.CollectionDeleteRequest(id=hash_id)
             response = stub.collection_delete(request)
 
             return Response()

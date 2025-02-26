@@ -20,8 +20,8 @@ if DjangoSettings.INDEXER_PATH is not None:
     sys.path.append(DjangoSettings.INDEXER_PATH)
 
 
-from iart_indexer import indexer_pb2, indexer_pb2_grpc
-from iart_indexer.utils import (
+from interface import analyser_pb2, analyser_pb2_grpc
+from interface.utils import (
     meta_from_proto,
     classifier_from_proto,
     feature_from_proto,
@@ -32,11 +32,11 @@ logger = logging.getLogger(__name__)
 
 class Get(RPCView):
     def parse_request(self, params):
-        return indexer_pb2.GetRequest(id=params["id"])
+        return analyser_pb2.GetRequest(id=params["id"])
 
     def rpc_get(self, params):
         grpc_request = self.parse_request(params)
-        stub = indexer_pb2_grpc.IndexerStub(self.channel)
+        stub = analyser_pb2_grpc.IndexerStub(self.channel)
 
         try:
             response = stub.get(grpc_request)

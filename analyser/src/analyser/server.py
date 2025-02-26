@@ -25,106 +25,105 @@ from concurrent import futures
 from google.protobuf.json_format import MessageToJson, MessageToDict, ParseDict
 
 from plugins import IndexerPluginManager, MappingPluginManager, ComputePluginManager
-from utils import (
+from interface.utils import (
     meta_from_proto,
     meta_to_proto,
     classifier_to_proto,
     feature_to_proto,
 )
 
-from jobs import IndexingJob
-from search import Searcher
+from jobs import IndexingJob, SearchJob
 
 from plugins.cache import Cache
 
 _ONE_DAY_IN_SECONDS = 60 * 60 * 24
 
 
-def search(args):
-    logging.info("Search: Start")
+# def search(args):
+#     logging.info("Search: Start")
 
-    try:
-        start_time = time.time()
+#     try:
+#         start_time = time.time()
 
-        query = ParseDict(args["query"], analyser_pb2.SearchRequest())
-        config = args["config"]
+#         query = ParseDict(args["query"], analyser_pb2.SearchRequest())
+#         config = args["config"]
 
-        database = ElasticSearchDatabase(config=config.get("elasticsearch", {}))
+#         database = ElasticSearchDatabase(config=config.get("elasticsearch", {}))
 
-        compute_manager = globals().get("compute_manager")
-        mapping_plugin_manager = globals().get("mapping_manager")
-        indexer_plugin_manager = globals().get("indexer_manager")
+#         compute_manager = globals().get("compute_manager")
+#         mapping_plugin_manager = globals().get("mapping_manager")
+#         indexer_plugin_manager = globals().get("indexer_manager")
 
-        classifier_plugin_manager = None
-        # indexer_plugin_manager = None
+#         classifier_plugin_manager = None
+#         # indexer_plugin_manager = None
 
-        aggregator = Aggregator(database)
-        searcher = Searcher(
-            database,
-            compute_manager,
-            classifier_plugin_manager,
-            indexer_plugin_manager,
-            mapping_plugin_manager,
-            aggregator=aggregator,
-        )
+#         aggregator = Aggregator(database)
+#         searcher = Searcher(
+#             database,
+#             compute_manager,
+#             classifier_plugin_manager,
+#             indexer_plugin_manager,
+#             mapping_plugin_manager,
+#             aggregator=aggregator,
+#         )
 
-        logging.info(f"Init done: {time.time() - start_time}")
+#         logging.info(f"Init done: {time.time() - start_time}")
 
-        search_result = searcher(query)
-        logging.info(f"Search done: {time.time() - start_time}")
+#         search_result = searcher(query)
+#         logging.info(f"Search done: {time.time() - start_time}")
 
-        result = analyser_pb2.ListSearchResultReply()
+#         result = analyser_pb2.ListSearchResultReply()
 
-        for e in search_result["entries"]:
-            entry = result.entries.add()
-            entry.id = e["id"]
-            entry.padded = e["padded"]
+#         for e in search_result["entries"]:
+#             entry = result.entries.add()
+#             entry.id = e["id"]
+#             entry.padded = e["padded"]
 
-            if "meta" in e:
-                meta_to_proto(entry.meta, e["meta"])
-            if "origin" in e:
-                meta_to_proto(entry.origin, e["origin"])
-            if "classifier" in e:
-                classifier_to_proto(entry.classifier, e["classifier"])
-            if "feature" in e:
-                feature_to_proto(entry.feature, e["feature"])
-            if "coordinates" in e:
-                entry.coordinates.extend(e["coordinates"])
-            if "distance" in e:
-                entry.distance = e["distance"]
-            if "cluster" in e:
-                entry.cluster = e["cluster"]
-            if "collection" in e:
-                entry.collection.id = e["collection"]["id"]
-                entry.collection.name = e["collection"]["name"]
-                entry.collection.is_public = e["collection"]["is_public"]
+#             if "meta" in e:
+#                 meta_to_proto(entry.meta, e["meta"])
+#             if "origin" in e:
+#                 meta_to_proto(entry.origin, e["origin"])
+#             if "classifier" in e:
+#                 classifier_to_proto(entry.classifier, e["classifier"])
+#             if "feature" in e:
+#                 feature_to_proto(entry.feature, e["feature"])
+#             if "coordinates" in e:
+#                 entry.coordinates.extend(e["coordinates"])
+#             if "distance" in e:
+#                 entry.distance = e["distance"]
+#             if "cluster" in e:
+#                 entry.cluster = e["cluster"]
+#             if "collection" in e:
+#                 entry.collection.id = e["collection"]["id"]
+#                 entry.collection.name = e["collection"]["name"]
+#                 entry.collection.is_public = e["collection"]["is_public"]
 
-        if "aggregations" in search_result:
-            for e in search_result["aggregations"]:
-                aggr = result.aggregate.add()
-                aggr.field_name = e["field_name"]
+#         if "aggregations" in search_result:
+#             for e in search_result["aggregations"]:
+#                 aggr = result.aggregate.add()
+#                 aggr.field_name = e["field_name"]
 
-                for y in e["entries"]:
-                    value_field = aggr.entries.add()
-                    value_field.key = y["name"]
-                    value_field.int_val = y["value"]
+#                 for y in e["entries"]:
+#                     value_field = aggr.entries.add()
+#                     value_field.key = y["name"]
+#                     value_field.int_val = y["value"]
 
-        result_dict = MessageToDict(result)
+#         result_dict = MessageToDict(result)
 
-        return result_dict
-    except Exception as e:
-        logging.error(f"Indexer: {repr(e)}")
-        exc_type, exc_value, exc_traceback = sys.exc_info()
+#         return result_dict
+#     except Exception as e:
+#         logging.error(f"Indexer: {repr(e)}")
+#         exc_type, exc_value, exc_traceback = sys.exc_info()
 
-        traceback.print_exception(
-            exc_type,
-            exc_value,
-            exc_traceback,
-            limit=2,
-            file=sys.stdout,
-        )
+#         traceback.print_exception(
+#             exc_type,
+#             exc_value,
+#             exc_traceback,
+#             limit=2,
+#             file=sys.stdout,
+#         )
 
-    return None
+#     return None
 
 
 def init_plugins(config):
@@ -180,11 +179,12 @@ class IndexerServicer(analyser_pb2_grpc.IndexerServicer):
     def __init__(self, config):
         self.config = config
         self.managers = init_plugins(config)
-        self.process_pool = futures.ProcessPoolExecutor(
-            max_workers=1, initializer=init_process, initargs=(config,)
-        )
+
         self.indexing_process_pool = futures.ProcessPoolExecutor(
             max_workers=8, initializer=IndexingJob().init_worker, initargs=(config,)
+        )
+        self.search_process_pool = futures.ProcessPoolExecutor(
+            max_workers=8, initializer=SearchJob().init_worker, initargs=(config,)
         )
         self.futures = []
 
@@ -302,49 +302,52 @@ class IndexerServicer(analyser_pb2_grpc.IndexerServicer):
 
         return analyser_pb2.StatusReply(status="error")
 
-    def get(self, request, context):
-        database = ElasticSearchDatabase(config=self.config.get("elasticsearch", {}))
+    # def get(self, request, context):
+    #     database = ElasticSearchDatabase(config=self.config.get("elasticsearch", {}))
 
-        entry = database.get_entry(request.id)
+    #     entry = database.get_entry(request.id)
 
-        if entry is None:
-            context.set_code(grpc.StatusCode.NOT_FOUND)
-            context.set_details("Entry unknown")
+    #     if entry is None:
+    #         context.set_code(grpc.StatusCode.NOT_FOUND)
+    #         context.set_details("Entry unknown")
 
-            return analyser_pb2.GetReply()
+    #         return analyser_pb2.GetReply()
 
-        result = analyser_pb2.GetReply()
-        result.id = entry["id"]
+    #     result = analyser_pb2.GetReply()
+    #     result.id = entry["id"]
 
-        if "meta" in entry:
-            meta_to_proto(result.meta, entry["meta"])
-        if "collection" in entry:
-            logging.info(entry["collection"])
-            result.collection.id = entry["collection"]["id"]
-            result.collection.name = entry["collection"]["name"]
-            result.collection.is_public = entry["collection"]["is_public"]
-        if "origin" in entry:
-            meta_to_proto(result.origin, entry["origin"])
-        if "classifier" in entry:
-            classifier_to_proto(result.classifier, entry["classifier"])
-        if "feature" in entry:
-            feature_to_proto(result.feature, entry["feature"])
+    #     if "meta" in entry:
+    #         meta_to_proto(result.meta, entry["meta"])
+    #     if "collection" in entry:
+    #         logging.info(entry["collection"])
+    #         result.collection.id = entry["collection"]["id"]
+    #         result.collection.name = entry["collection"]["name"]
+    #         result.collection.is_public = entry["collection"]["is_public"]
+    #     if "origin" in entry:
+    #         meta_to_proto(result.origin, entry["origin"])
+    #     if "classifier" in entry:
+    #         classifier_to_proto(result.classifier, entry["classifier"])
+    #     if "feature" in entry:
+    #         feature_to_proto(result.feature, entry["feature"])
 
-        return result
+    #     return result
 
     def search(self, request, context):
+        logging.info(f"[Server] Search")
+        job_id = uuid.uuid4().hex
+
         jsonObj = MessageToDict(request)
         logging.info(jsonObj)
 
         job_id = uuid.uuid4().hex
         variable = {
-            "query": jsonObj,
             "config": self.config,
             "future": None,
             "id": job_id,
+            "request": request,
         }
 
-        future = self.process_pool.submit(search, copy.deepcopy(variable))
+        future = self.search_process_pool.submit(SearchJob(), copy.deepcopy(variable))
         variable["future"] = future
         self.futures.append(variable)
 
@@ -352,6 +355,7 @@ class IndexerServicer(analyser_pb2_grpc.IndexerServicer):
 
     def list_search_result(self, request, context):
         futures_lut = {x["id"]: i for i, x in enumerate(self.futures)}
+        logging.error(futures_lut)
 
         if request.id in futures_lut:
             job_data = self.futures[futures_lut[request.id]]
@@ -363,7 +367,9 @@ class IndexerServicer(analyser_pb2_grpc.IndexerServicer):
                 return analyser_pb2.ListSearchResultReply()
             try:
                 result = job_data["future"].result()
-                result = ParseDict(result, analyser_pb2.ListSearchResultReply())
+                logging.error(result)
+                result = result
+                # result = ParseDict(result, analyser_pb2.ListSearchResultReply())
             except Exception as e:
                 logging.error(f"Indexer: {repr(e)}")
                 logging.error(traceback.format_exc())
@@ -380,65 +386,6 @@ class IndexerServicer(analyser_pb2_grpc.IndexerServicer):
         context.set_details("Job unknown")
 
         return analyser_pb2.ListSearchResultReply()
-
-    def aggregate(self, request, context):
-        jsonObj = MessageToJson(request)
-        logging.info(jsonObj)
-        database = ElasticSearchDatabase(config=self.config.get("elasticsearch", {}))
-        aggregator = Aggregator(database)
-
-        size = 5 if request.size <= 0 else request.size
-        result_list = []
-
-        if request.part == "meta" and request.type == "count":
-            result_list = aggregator.meta_text_count(
-                field_name=request.field_name, size=size
-            )
-        elif request.part == "origin" and request.type == "count":
-            result_list = aggregator.origin_test_count(
-                field_name=request.field_name, size=size
-            )
-        elif request.part == "feature" and request.type == "count":
-            result_list = aggregator.feature_count(size=size)
-        elif request.part == "classifier" and request.type == "count":
-            result_list = aggregator.classifier_tag_count(size=size)
-        else:
-            context.set_code(grpc.StatusCode.NOT_FOUND)
-            context.set_details("Job unknown")
-
-        result = analyser_pb2.AggregateReply()
-
-        for x in result_list:
-            f = result.field.add()
-            f.key = x["name"]
-            f.int_val = x["value"]
-
-        return result
-
-    def collection_delete(self, request, context):
-        logging.info("[Server] collection_delete")
-        logging.info(request.id)
-
-        database = ElasticSearchDatabase(config=self.config.get("elasticsearch", {}))
-        result = database.raw_delete(
-            {
-                "query": {
-                    "nested": {
-                        "path": "collection",
-                        "query": {"terms": {"collection.id": [request.id]}},
-                    }
-                }
-            }
-        )
-
-        logging.info(f"[Server] {result}")
-
-        result = analyser_pb2.CollectionDeleteReply()  # collections,ids)
-
-        # start indexing all
-        self.managers["indexer_manager"].delete([request.id])
-
-        return result
 
 
 class CollectionServicer(collection_pb2_grpc.CollectionServicer):

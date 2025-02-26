@@ -299,30 +299,6 @@ class Client:
         response = stub.analyse(request)
         return response
 
-    def copy_images(self, paths, image_paths=None, image_output=None):
-        if not isinstance(paths, (list, set)):
-            ext = os.path.splitext(paths)[1]
-
-            if ext == ".json":
-                entries = list_json(paths, image_paths)
-            elif ext == ".jsonl":
-                entries = list_jsonl(paths, image_paths)
-            elif ext == ".csv":
-                entries = list_csv(paths, image_paths)
-            else:
-                raise
-        else:
-            entries = list_images(paths)
-
-        logging.info(f"Client: Copying {len(entries)} images to {image_output}")
-
-        if image_output:
-            entries = copy_images(
-                entries, image_paths=image_paths, image_output=image_output
-            )
-
-        return entries
-
     def indexing(
         self,
         paths,
@@ -491,35 +467,6 @@ class Client:
 
         return response.status
 
-    def build_suggester(self, field_name=None):
-        channel = grpc.insecure_channel(
-            f"{self.host}:{self.port}",
-            options=[
-                ("grpc.max_send_message_length", 50 * 1024 * 1024),
-                ("grpc.max_receive_message_length", 50 * 1024 * 1024),
-            ],
-        )
-
-        stub = analyser_pb2_grpc.IndexerStub(channel)
-        request = analyser_pb2.SuggesterRequest()
-
-        if field_name is None:
-            field_name = [
-                "meta.title",
-                "meta.artist_name",
-                "meta.location",
-                "meta.institution",
-                "meta.object_type",
-                "meta.medium",
-                "origin.name",
-                "classifier.*",
-            ]
-
-        request.field_names.extend(field_name)
-        response = stub.build_suggester(request)
-
-        return response.id
-
     def search(self, query):
         channel = grpc.insecure_channel(
             f"{self.host}:{self.port}",
@@ -532,47 +479,103 @@ class Client:
         stub = analyser_pb2_grpc.IndexerStub(channel)
         request = analyser_pb2.SearchRequest()
 
-        for q in query["queries"]:
-            if "field" in q and q["field"] is not None:
-                type_req = q["field"]
+        # a = {
+        #     "terms": [
+        #         {
+        #             "type": "plugin_vector",
+        #             "params": {
+        #                 "name": "ClipText",
+        #                 "inputs": [
+        #                     {"name": "text", "type": "string", "text": "landscape"}
+        #                 ],
+        #             "vector_index": ["clip_text", "clip_image"]
+        #             },
+        #         }
+        #     ]
+        # }
 
-                if not isinstance(type_req, str):
-                    return JsonResponse({"status": "error"})
-
+        for q in query["terms"]:
+            if q["type"] == "plugin_vector":
+                plugin_vector_params = q.get("params")
                 term = request.terms.add()
-                term.text.query = q["query"]
-                term.text.field = q["field"]
-                term.text.flag = q["flag"]
-            elif "query" in q and q["query"] is not None:
+                params = q["params"]
+                term.vector.analyse.plugin = params["plugin"]
+
+                for i in params.get("inputs", []):
+                    input_field = term.vector.analyse.inputs.add()
+                    if i["type"] == "image":
+                        input_field.name = "image"
+                        input_field.image.content = open(i["path"], "rb").read()
+                    elif i["type"] == "string":
+                        input_field.name = "text"
+                        input_field.string.text = i["text"]
+
+                for p in params.get("parameters", []):
+                    parameter_field = term.vector.analyse.parameters.add()
+                    parameter_field.name = p["name"]
+                    parameter_field.content = str(p["value"]).encode()
+
+                    if isinstance(p["value"], float):
+                        parameter_field.type = analyser_pb2.FLOAT_TYPE
+                    if isinstance(p["value"], int):
+                        parameter_field.type = analyser_pb2.INT_TYPE
+                    if isinstance(p["value"], str):
+                        parameter_field.type = analyser_pb2.STRING_TYPE
+
+                term.vector.vector_indexes.extend(params["vector_indexes"])
+
+            elif q["type"] == "text":
+                text_params = q.get("params")
                 term = request.terms.add()
-                term.text.query = q["query"]
+                params = q["params"]
+                term.text.query = params["query"]
+                term.text.field = params["field"]
 
-            if "reference" in q and q["reference"] is not None:
-                request.sorting = "feature"
-                term = request.terms.add()
+                term.text.flag = analyser_pb2.TextSearchTerm.MUST
+                if params["flag"] == "SHOULD":
+                    term.text.flag = analyser_pb2.TextSearchTerm.SHOULD
+                if params["flag"] == "NOT":
+                    term.text.flag = analyser_pb2.TextSearchTerm.NOT
+            # if "field" in q and q["field"] is not None:
+            #     type_req = q["field"]
 
-                if os.path.exists(q["reference"]):
-                    term.feature.image.encoded = open(q["reference"], "rb").read()
-                else:
-                    term.feature.image.id = q["reference"]
+            #     if not isinstance(type_req, str):
+            #         return JsonResponse({"status": "error"})
 
-                if "features" in q:
-                    plugins = q["features"]
+            #     term = request.terms.add()
+            #     term.text.query = q["query"]
+            #     term.text.field = q["field"]
+            #     term.text.flag = q["flag"]
+            # elif "query" in q and q["query"] is not None:
+            #     term = request.terms.add()
+            #     term.text.query = q["query"]
 
-                    if not isinstance(q["features"], (list, set)):
-                        plugins = [q["features"]]
+            # if "reference" in q and q["reference"] is not None:
+            #     request.sorting = "feature"
+            #     term = request.terms.add()
 
-                    for p in plugins:
-                        for k, v in p.items():
-                            plugins = term.feature.plugins.add()
-                            plugins.name = k.lower()
-                            plugins.weight = v
+            #     if os.path.exists(q["reference"]):
+            #         term.feature.image.encoded = open(q["reference"], "rb").read()
+            #     else:
+            #         term.feature.image.id = q["reference"]
 
-        if "sorting" in query and query["sorting"] == "random":
-            request.sorting = "random"
+            #     if "features" in q:
+            #         plugins = q["features"]
 
-        if "mapping" in query and query["mapping"] == "umap":
-            request.mapping = "umap"
+            #         if not isinstance(q["features"], (list, set)):
+            #             plugins = [q["features"]]
+
+            #         for p in plugins:
+            #             for k, v in p.items():
+            #                 plugins = term.feature.plugins.add()
+            #                 plugins.name = k.lower()
+            #                 plugins.weight = v
+
+        # if "sorting" in query and query["sorting"] == "random":
+        #     request.sorting = "random"
+
+        # if "mapping" in query and query["mapping"] == "umap":
+        #     request.mapping = "umap"
 
         response = stub.search(request)
 
@@ -608,124 +611,124 @@ class Client:
 
         return response
 
-    def build_indexer(self, rebuild=False, collections=None):
-        channel = grpc.insecure_channel(
-            f"{self.host}:{self.port}",
-            options=[
-                ("grpc.max_send_message_length", 50 * 1024 * 1024),
-                ("grpc.max_receive_message_length", 50 * 1024 * 1024),
-            ],
-        )
+    # def build_indexer(self, rebuild=False, collections=None):
+    #     channel = grpc.insecure_channel(
+    #         f"{self.host}:{self.port}",
+    #         options=[
+    #             ("grpc.max_send_message_length", 50 * 1024 * 1024),
+    #             ("grpc.max_receive_message_length", 50 * 1024 * 1024),
+    #         ],
+    #     )
 
-        stub = analyser_pb2_grpc.IndexerStub(channel)
-        request = analyser_pb2.BuildIndexerRequest(
-            collections=collections, rebuild=rebuild
-        )
+    #     stub = analyser_pb2_grpc.IndexerStub(channel)
+    #     request = analyser_pb2.BuildIndexerRequest(
+    #         collections=collections, rebuild=rebuild
+    #     )
 
-        response = stub.build_indexer(request)
+    #     response = stub.build_indexer(request)
 
-        return response
+    #     return response
 
-    def build_feature_cache(self):
-        channel = grpc.insecure_channel(
-            f"{self.host}:{self.port}",
-            options=[
-                ("grpc.max_send_message_length", 50 * 1024 * 1024),
-                ("grpc.max_receive_message_length", 50 * 1024 * 1024),
-            ],
-        )
+    # def build_feature_cache(self):
+    #     channel = grpc.insecure_channel(
+    #         f"{self.host}:{self.port}",
+    #         options=[
+    #             ("grpc.max_send_message_length", 50 * 1024 * 1024),
+    #             ("grpc.max_receive_message_length", 50 * 1024 * 1024),
+    #         ],
+    #     )
 
-        stub = analyser_pb2_grpc.IndexerStub(channel)
-        request = analyser_pb2.BuildFeatureCacheRequest()
+    #     stub = analyser_pb2_grpc.IndexerStub(channel)
+    #     request = analyser_pb2.BuildFeatureCacheRequest()
 
-        response = stub.build_feature_cache(request)
+    #     response = stub.build_feature_cache(request)
 
-        return response
+    #     return response
 
-    def dump(self, output_path, origin):
-        channel = grpc.insecure_channel(
-            f"{self.host}:{self.port}",
-            options=[
-                ("grpc.max_send_message_length", 50 * 1024 * 1024),
-                ("grpc.max_receive_message_length", 50 * 1024 * 1024),
-            ],
-        )
+    # def dump(self, output_path, origin):
+    #     channel = grpc.insecure_channel(
+    #         f"{self.host}:{self.port}",
+    #         options=[
+    #             ("grpc.max_send_message_length", 50 * 1024 * 1024),
+    #             ("grpc.max_receive_message_length", 50 * 1024 * 1024),
+    #         ],
+    #     )
 
-        stub = analyser_pb2_grpc.IndexerStub(channel)
-        request = analyser_pb2.DumpRequest(origin=origin)
+    #     stub = analyser_pb2_grpc.IndexerStub(channel)
+    #     request = analyser_pb2.DumpRequest(origin=origin)
 
-        with open(output_path, "wb") as f:
-            for i, x in enumerate(stub.dump(request)):
-                f.write(x.entry)
+    #     with open(output_path, "wb") as f:
+    #         for i, x in enumerate(stub.dump(request)):
+    #             f.write(x.entry)
 
-                if i % 1000 == 0:
-                    print(i)
+    #             if i % 1000 == 0:
+    #                 print(i)
 
-    def load(self, input_path):
-        channel = grpc.insecure_channel(
-            f"{self.host}:{self.port}",
-            options=[
-                ("grpc.max_send_message_length", 50 * 1024 * 1024),
-                ("grpc.max_receive_message_length", 50 * 1024 * 1024),
-            ],
-        )
+    # def load(self, input_path):
+    #     channel = grpc.insecure_channel(
+    #         f"{self.host}:{self.port}",
+    #         options=[
+    #             ("grpc.max_send_message_length", 50 * 1024 * 1024),
+    #             ("grpc.max_receive_message_length", 50 * 1024 * 1024),
+    #         ],
+    #     )
 
-        stub = analyser_pb2_grpc.IndexerStub(channel)
+    #     stub = analyser_pb2_grpc.IndexerStub(channel)
 
-        def entry_generator(path, blacklist=None):
-            with open(path, "rb") as f:
-                unpacker = msgpack.Unpacker(f)
+    #     def entry_generator(path, blacklist=None):
+    #         with open(path, "rb") as f:
+    #             unpacker = msgpack.Unpacker(f)
 
-                for entry in unpacker:
-                    if blacklist is not None and entry["id"] in blacklist:
-                        continue
+    #             for entry in unpacker:
+    #                 if blacklist is not None and entry["id"] in blacklist:
+    #                     continue
 
-                    yield analyser_pb2.LoadRequest(entry=msgpack.packb(entry))
+    #                 yield analyser_pb2.LoadRequest(entry=msgpack.packb(entry))
 
-        time_start = time.time()
+    #     time_start = time.time()
 
-        blacklist = set()
-        try_count = 20
-        count = 0
+    #     blacklist = set()
+    #     try_count = 20
+    #     count = 0
 
-        with tqdm(desc="Loading") as pbar:
-            while try_count > 0:
-                try:
-                    gen_iter = entry_generator(input_path, blacklist)
+    #     with tqdm(desc="Loading") as pbar:
+    #         while try_count > 0:
+    #             try:
+    #                 gen_iter = entry_generator(input_path, blacklist)
 
-                    for i, entry in enumerate(stub.load(gen_iter)):
-                        blacklist.add(entry.id)
-                        pbar.update()
-                        count += 1
+    #                 for i, entry in enumerate(stub.load(gen_iter)):
+    #                     blacklist.add(entry.id)
+    #                     pbar.update()
+    #                     count += 1
 
-                        if count % 1000 == 0:
-                            speed = count / (time.time() - time_start)
-                            logging.info(f"Client: Loading {count} (speed: {speed})")
+    #                     if count % 1000 == 0:
+    #                         speed = count / (time.time() - time_start)
+    #                         logging.info(f"Client: Loading {count} (speed: {speed})")
 
-                    try_count = 0
-                except KeyboardInterrupt:
-                    raise
-                except Exception as e:
-                    logging.error(e)
-                    try_count -= 1
+    #                 try_count = 0
+    #             except KeyboardInterrupt:
+    #                 raise
+    #             except Exception as e:
+    #                 logging.error(e)
+    #                 try_count -= 1
 
-    def aggregate(self, part, type, field_name, size):
-        channel = grpc.insecure_channel(
-            f"{self.host}:{self.port}",
-            options=[
-                ("grpc.max_send_message_length", 50 * 1024 * 1024),
-                ("grpc.max_receive_message_length", 50 * 1024 * 1024),
-            ],
-        )
+    # def aggregate(self, part, type, field_name, size):
+    #     channel = grpc.insecure_channel(
+    #         f"{self.host}:{self.port}",
+    #         options=[
+    #             ("grpc.max_send_message_length", 50 * 1024 * 1024),
+    #             ("grpc.max_receive_message_length", 50 * 1024 * 1024),
+    #         ],
+    #     )
 
-        stub = analyser_pb2_grpc.IndexerStub(channel)
-        request = analyser_pb2.AggregateRequest(
-            type=type, part=part, field_name=field_name, size=size
-        )
+    #     stub = analyser_pb2_grpc.IndexerStub(channel)
+    #     request = analyser_pb2.AggregateRequest(
+    #         type=type, part=part, field_name=field_name, size=size
+    #     )
 
-        response = stub.aggregate(request)
+    #     response = stub.aggregate(request)
 
-        return response
+    #     return response
 
     def create_collection(self, parameters):
         channel = grpc.insecure_channel(

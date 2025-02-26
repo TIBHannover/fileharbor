@@ -107,18 +107,17 @@ class IndexerPluginManager(Manager):
     def search(
         self,
         queries,
-        collections=None,
-        include_default_collection=True,
+        filters,
         size=100,
     ):
+        logging.error(f"INDEX {queries}")
         result_list = []
 
         for plugin in self.plugin_list:
             plugin = plugin["plugin"]
             entries = plugin.search(
-                queries,
-                collections=collections,
-                include_default_collection=include_default_collection,
+                queries=queries,
+                filters=filters,
                 size=size,
             )
 

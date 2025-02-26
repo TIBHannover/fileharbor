@@ -12,13 +12,37 @@ from django.core.exceptions import BadRequest
 from backend.models import Collection, Image, UploadedImage
 from backend.utils import TarArchive, ZipArchive, check_extension
 
-from iart_indexer import indexer_pb2, indexer_pb2_grpc
-from iart_indexer.utils import image_resize
+from interface import analyser_pb2, analyser_pb2_grpc
 
 if settings.INDEXER_PATH is not None:
     sys.path.append(settings.INDEXER_PATH)
 
 logger = logging.getLogger(__name__)
+
+
+def image_resize(image, max_dim=None, min_dim=None, size=None):
+    if max_dim is not None:
+        shape = np.asarray(image.shape[:2], dtype=np.float32)
+
+        long_dim = max(shape)
+        scale = min(1, max_dim / long_dim)
+        new_shape = np.asarray(shape * scale, dtype=np.int32)
+
+    elif min_dim is not None:
+        shape = np.asarray(image.shape[:2], dtype=np.float32)
+
+        short_dim = min(shape)
+        scale = max(1, min_dim / short_dim)
+        new_shape = np.asarray(shape * scale, dtype=np.int32)
+    elif size is not None:
+        new_shape = size
+    else:
+        return image
+
+    PIL.Image.MAX_IMAGE_PIXELS = 10000 * 10000
+    img = PIL.Image.fromarray(image)
+    img = img.resize(size=new_shape[::-1])
+    return np.array(img)
 
 
 @shared_task(bind=True)
@@ -58,11 +82,11 @@ def collection_upload(self, args):
         ],
     )
 
-    stub = indexer_pb2_grpc.IndexerStub(channel)
+    stub = analyser_pb2_grpc.IndexerStub(channel)
 
     def entry_generator(entries, collection_id, collection_name, visibility):
         for entry in entries:
-            request = indexer_pb2.IndexingRequest()
+            request = analyser_pb2.IndexingRequest()
             request_image = request.image
             request_image.id = entry["id"]
 
@@ -139,9 +163,13 @@ def collection_upload(self, args):
                 suffix = res.get("suffix", "")
                 new_image = image_resize(image, min_dim=min_size)
 
-                image_output_dir = os.path.join(settings.UPLOAD_ROOT, hash_value[0:2], hash_value[2:4])
+                image_output_dir = os.path.join(
+                    settings.UPLOAD_ROOT, hash_value[0:2], hash_value[2:4]
+                )
                 os.makedirs(image_output_dir, exist_ok=True)
-                image_output_file = os.path.join(image_output_dir, f"{hash_value}{suffix}.jpg")
+                image_output_file = os.path.join(
+                    image_output_dir, f"{hash_value}{suffix}.jpg"
+                )
 
                 logger.info(f"Client: Created image {image_output_file}")
                 imageio.imwrite(image_output_file, new_image)
@@ -196,6 +224,6 @@ def collection_upload(self, args):
 
 @shared_task
 def remove_upload_image(path: str, img_hash: str):
-    logging.info(f'Removing uploaded image: {path}')
+    logging.info(f"Removing uploaded image: {path}")
     UploadedImage.objects.delete(hash_id=img_hash)
     os.remove(path)

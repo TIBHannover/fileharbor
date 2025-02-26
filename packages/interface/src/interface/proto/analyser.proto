@@ -132,17 +132,6 @@ message SuggesterRequest { repeated string field_names = 1; }
 message SuggesterReply { string id = 1; }
 
 // Search Request
-message FeatureSearchTerm {
-  repeated PluginRun plugins = 1;
-  Image image = 2;
-
-  enum Flag {
-    POSITIVE = 0;
-    NEGATIVE = 1;
-  }
-  Flag flag = 3;
-}
-
 message TextSearchTerm {
   string query = 1;
   string field = 2;
@@ -153,17 +142,6 @@ message TextSearchTerm {
     NOT = 2;
   }
 
-  Flag flag = 3;
-}
-
-message ImageTextSearchTerm {
-  repeated PluginRun plugins = 1;
-  string query = 2;
-
-  enum Flag {
-    POSITIVE = 0;
-    NEGATIVE = 1;
-  }
   Flag flag = 3;
 }
 
@@ -196,12 +174,22 @@ message NumberSearchTerm {
   Flag flag = 6;
 }
 
+message PluginVectorSearchTerm {
+  AnalyseRequest analyse = 1;
+  repeated string vector_indexes = 4;
+
+  enum Flag {
+    POSITIVE = 0;
+    NEGATIVE = 1;
+  }
+  Flag flag = 5;
+}
+
 message SearchTerm {
   oneof term {
     TextSearchTerm text = 1;
     NumberSearchTerm number = 2;
-    ImageTextSearchTerm image_text = 3;
-    FeatureSearchTerm feature = 4;
+    PluginVectorSearchTerm vector = 3;
   }
 }
 
@@ -238,7 +226,7 @@ message SearchRequest {
   Sorting sorting = 2;
   Mapping mapping = 3;
 
-  AggregateRequest aggregate = 4;
+  // AggregateRequest aggregate = 4;
   string random_seed = 5;
 
   enum Extra {
