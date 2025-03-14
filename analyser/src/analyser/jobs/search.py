@@ -17,6 +17,7 @@ from interface.utils import (
     classifier_to_proto,
     feature_to_proto,
 )
+from google.protobuf.json_format import MessageToJson, MessageToDict, ParseDict
 
 
 class SearchJob:
@@ -60,12 +61,18 @@ class SearchJob:
         setattr(cls, "data_manager", data_manager)
 
     @classmethod
+    def reranking(cls, result_list):
+        print(result_list[0])
+
+    @classmethod
     def __call__(cls, query):
         # TODO customize the indexing path and plugin behind it
         logging.error(query)
 
+        request = ParseDict(query["request"], analyser_pb2.SearchRequest())
+
         filters = []
-        for term in query["request"].terms:
+        for term in request.terms:
 
             term_type = term.WhichOneof("term")
             logging.error(term_type)
@@ -82,7 +89,7 @@ class SearchJob:
                 )
 
         results = []
-        for term in query["request"].terms:
+        for term in request.terms:
 
             term_type = term.WhichOneof("term")
             logging.error(term_type)
@@ -101,12 +108,14 @@ class SearchJob:
                 )
                 results.extend(term_results)
 
+        # Reranking
+
+        results = cls.reranking(results)
+
         proto_results = analyser_pb2.ListSearchResultReply()
         for x in results:
             entry = proto_results.entries.add()
-            entry.id =  x["id"]
-            meta_to_proto(entry.meta , x["meta"])
+            entry.id = x["id"]
+            meta_to_proto(entry.meta, x["meta"])
 
-
-
-        return results
+        return MessageToDict(proto_results)

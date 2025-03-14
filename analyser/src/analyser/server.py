@@ -36,95 +36,6 @@ from jobs import IndexingJob, SearchJob
 
 from plugins.cache import Cache
 
-_ONE_DAY_IN_SECONDS = 60 * 60 * 24
-
-
-# def search(args):
-#     logging.info("Search: Start")
-
-#     try:
-#         start_time = time.time()
-
-#         query = ParseDict(args["query"], analyser_pb2.SearchRequest())
-#         config = args["config"]
-
-#         database = ElasticSearchDatabase(config=config.get("elasticsearch", {}))
-
-#         compute_manager = globals().get("compute_manager")
-#         mapping_plugin_manager = globals().get("mapping_manager")
-#         indexer_plugin_manager = globals().get("indexer_manager")
-
-#         classifier_plugin_manager = None
-#         # indexer_plugin_manager = None
-
-#         aggregator = Aggregator(database)
-#         searcher = Searcher(
-#             database,
-#             compute_manager,
-#             classifier_plugin_manager,
-#             indexer_plugin_manager,
-#             mapping_plugin_manager,
-#             aggregator=aggregator,
-#         )
-
-#         logging.info(f"Init done: {time.time() - start_time}")
-
-#         search_result = searcher(query)
-#         logging.info(f"Search done: {time.time() - start_time}")
-
-#         result = analyser_pb2.ListSearchResultReply()
-
-#         for e in search_result["entries"]:
-#             entry = result.entries.add()
-#             entry.id = e["id"]
-#             entry.padded = e["padded"]
-
-#             if "meta" in e:
-#                 meta_to_proto(entry.meta, e["meta"])
-#             if "origin" in e:
-#                 meta_to_proto(entry.origin, e["origin"])
-#             if "classifier" in e:
-#                 classifier_to_proto(entry.classifier, e["classifier"])
-#             if "feature" in e:
-#                 feature_to_proto(entry.feature, e["feature"])
-#             if "coordinates" in e:
-#                 entry.coordinates.extend(e["coordinates"])
-#             if "distance" in e:
-#                 entry.distance = e["distance"]
-#             if "cluster" in e:
-#                 entry.cluster = e["cluster"]
-#             if "collection" in e:
-#                 entry.collection.id = e["collection"]["id"]
-#                 entry.collection.name = e["collection"]["name"]
-#                 entry.collection.is_public = e["collection"]["is_public"]
-
-#         if "aggregations" in search_result:
-#             for e in search_result["aggregations"]:
-#                 aggr = result.aggregate.add()
-#                 aggr.field_name = e["field_name"]
-
-#                 for y in e["entries"]:
-#                     value_field = aggr.entries.add()
-#                     value_field.key = y["name"]
-#                     value_field.int_val = y["value"]
-
-#         result_dict = MessageToDict(result)
-
-#         return result_dict
-#     except Exception as e:
-#         logging.error(f"Indexer: {repr(e)}")
-#         exc_type, exc_value, exc_traceback = sys.exc_info()
-
-#         traceback.print_exception(
-#             exc_type,
-#             exc_value,
-#             exc_traceback,
-#             limit=2,
-#             file=sys.stdout,
-#         )
-
-#     return None
-
 
 def init_plugins(config):
     data_dict = {}
@@ -344,7 +255,7 @@ class IndexerServicer(analyser_pb2_grpc.IndexerServicer):
             "config": self.config,
             "future": None,
             "id": job_id,
-            "request": request,
+            "request": jsonObj,
         }
 
         future = self.search_process_pool.submit(SearchJob(), copy.deepcopy(variable))
@@ -369,7 +280,7 @@ class IndexerServicer(analyser_pb2_grpc.IndexerServicer):
                 result = job_data["future"].result()
                 logging.error(result)
                 result = result
-                # result = ParseDict(result, analyser_pb2.ListSearchResultReply())
+                result = ParseDict(result, analyser_pb2.ListSearchResultReply())
             except Exception as e:
                 logging.error(f"Indexer: {repr(e)}")
                 logging.error(traceback.format_exc())

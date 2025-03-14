@@ -44,8 +44,6 @@ class Search(RPCView):
         cluster = {"type": "kmeans", "n": 1}
         lang = params.get("lang", "en")
 
-
-        print("FOO")
         # if params.get("settings"):
         #     settings = params["settings"]
 
@@ -171,8 +169,8 @@ class Search(RPCView):
                     term.vector.analyse.plugin = "ClipTextEmbeddingFeature"
                     input_field = term.vector.analyse.inputs.add()
                     input_field.name = "text"
-                    input_field.string.text =  q["value"]
-                    term.vector.vector_indexes.extend(["clip_text","clip_image"])
+                    input_field.string.text = q["value"]
+                    term.vector.vector_indexes.extend(["clip_text", "clip_image"])
 
                     # plugins = term.image_text.plugins.add()
                     # plugins.name = "clip_embedding_feature"
