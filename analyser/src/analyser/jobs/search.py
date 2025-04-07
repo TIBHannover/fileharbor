@@ -71,7 +71,9 @@ class SearchJob:
         # compute max score
         result = []
         for _, v in lut.items():
-            s = max([x["score"] for x in v])
+            # s = max([x["score"] for x in v])
+            s = sum([x["score"] for x in v]) / len(v)
+
             result.append([v[0], s])
 
         # sort after lowest key
