@@ -62,7 +62,22 @@ class SearchJob:
 
     @classmethod
     def reranking(cls, result_list):
-        print(result_list[0])
+        # build lut key, [results]
+        lut = {}
+        for x in result_list:
+            lut.setdefault(x["id"], [])
+            lut[x["id"]].append(x)
+
+        # compute max score
+        result = []
+        for _, v in lut.items():
+            s = max([x["score"] for x in v])
+            result.append([v[0], s])
+
+        # sort after lowest key
+        result_list = [x[0] for x in sorted(result, key=lambda x: -x[1])]
+
+        return result_list
 
     @classmethod
     def __call__(cls, query):
