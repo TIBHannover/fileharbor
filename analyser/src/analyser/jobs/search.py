@@ -134,5 +134,6 @@ class SearchJob:
             entry = proto_results.entries.add()
             entry.id = x["id"]
             meta_to_proto(entry.meta, x["meta"])
+            print("SEARCHENTRY", entry, flush=True)
 
         return MessageToDict(proto_results)

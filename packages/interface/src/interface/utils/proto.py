@@ -89,18 +89,16 @@ def dict_from_proto(proto):
 
 
 def meta_to_proto(proto, data):
-    for d in data:
+    for k, v in data.items():
         meta = proto.add()
 
-        if "value_int" in d and d["value_int"] is not None:
-            meta.int_val = d["value_int"]
-            meta.key = d["name"]
-        elif "value_float" in d and d["value_float"] is not None:
-            meta.float_val = d["value_float"]
-            meta.key = d["name"]
-        elif "value_str" in d and d["value_str"] is not None:
-            meta.string_val = d["value_str"]
-            meta.key = d["name"]
+        meta.key = k
+        if isinstance(v, int):
+            meta.int_val = v
+        elif isinstance(v, float):
+            meta.float_val = v
+        else:
+            meta.string_val = str(v)
 
     return proto
 

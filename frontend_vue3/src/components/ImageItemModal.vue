@@ -5,14 +5,14 @@
     <div class="grid-item-fill"></div>
 
     <!-- <v-pagination
-      v-if="nPages > 1"
-      v-model="page"
-      :length="nPages"
-      :total-visible="6"
-      class="mt-4"
-      color="accent"
-      circle
-    /> -->
+        v-if="nPages > 1"
+        v-model="page"
+        :length="nPages"
+        :total-visible="6"
+        class="mt-4"
+        color="accent"
+        circle
+      /> -->
   </div>
 </template>
 

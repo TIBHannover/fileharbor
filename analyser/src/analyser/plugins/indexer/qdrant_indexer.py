@@ -77,8 +77,9 @@ class QDrantIndexer(IndexerPlugin):
     def add_points(self, collection_name, points: List[Dict]):
         # TODO add lock here
         logging.info(f"[QDrantIndexer]: add_points")
-        for k, v in points[0].get("features", {}).items():
-            logging.error(f"{k}, {len(v)}, {v}")
+        # for k, v in points[0].get("features", {}).items():
+        #     logging.error(f"{k}, {len(v)}, {v}")
+        logging.info(f"X: {[x.get("meta",{}) for x in points]}")
         self.client.upsert(
             collection_name=collection_name,
             points=[
@@ -90,138 +91,6 @@ class QDrantIndexer(IndexerPlugin):
                 for x in points
             ],
         )
-
-    def indexing(self, index_entries=None, collections=None, rebuild=False):
-        logging.info(f"[QDrantIndexer] Indexing collections={collections}")
-        existing_collections = [
-            x.name for x in self.client.get_collections().collections
-        ]
-        logging.info(f"[QDrantIndexer] Existing collections={existing_collections}")
-
-        alias_uuid = "342ffe349e8f4addb0c2b49ffe467f27"  # uuid.uuid4().hex
-        collection_batch = {}
-        collection_alias_map = {}
-
-        for i, entry in enumerate(index_entries):
-            print(entry, flush=True)
-            entry_id = entry["id"]
-            collection_id = entry["collection"]["id"]
-
-            collection_alias_map[collection_id] = collection_id + "_" + alias_uuid
-            # Create collection if it not exist yet
-            if collection_alias_map[collection_id] not in existing_collections:
-                collection_dict = {}
-                for feature in entry["feature"]:
-                    collection_dict[feature["plugin"] + "." + feature["type"]] = (
-                        models.VectorParams(
-                            size=len(feature["value"]), distance=models.Distance.COSINE
-                        )
-                    )
-
-                result = self.client.recreate_collection(
-                    collection_name=collection_alias_map[collection_id],
-                    vectors_config=collection_dict,
-                    quantization_config=models.ScalarQuantization(
-                        scalar=models.ScalarQuantizationConfig(
-                            type=models.ScalarType.INT8,
-                            quantile=0.99,
-                            always_ram=True,
-                        ),
-                    ),
-                    optimizers_config=models.OptimizersConfigDiff(
-                        indexing_threshold=1000000000,
-                    ),
-                )
-                existing_collections.append(collection_alias_map[collection_id])
-                logging.info(
-                    f"[QDrantIndexer] Create new collection {collection_id} -> {collection_alias_map[collection_id]}"
-                )
-
-            # start creating point batches for each collection
-            if collection_id not in collection_batch:
-                collection_batch[collection_id] = []
-
-            point_dict = {}
-            for feature in entry["feature"]:
-                point_dict[feature["plugin"] + "." + feature["type"]] = (
-                    feature["value"] / np.linalg.norm(feature["value"], 2)
-                ).tolist()
-
-            collection_batch[collection_id].append(
-                models.PointStruct(
-                    id=entry_id,
-                    vector=point_dict,
-                )
-            )
-
-            # check if batch size is full to flush the cache
-            for collection_id, points in collection_batch.items():
-                if len(points) >= 100:
-                    try:
-                        self.client.upsert(
-                            collection_name=collection_alias_map[collection_id],
-                            points=points,
-                        )
-                        collection_batch[collection_id] = []
-                    except Exception as e:
-                        self.client = QdrantClient(
-                            host="localhost",
-                            port=6333,
-                            timeout=120,
-                            grpc_port=6334,
-                            prefer_grpc=False,
-                        )
-                        logging.error(
-                            f"[QDrantIndexer] Insert points exception {repr(e)}"
-                        )
-                        continue
-
-            if i % 1000 == 0:
-                logging.info(f"[QDrantIndexer] Indexing {i} documents")
-
-        # write the last batch
-        for collection_id, points in collection_batch.items():
-            if len(points) > 0:
-                try:
-                    self.client.upsert(
-                        collection_name=collection_alias_map[collection_id],
-                        points=points,
-                    )
-                except Exception as e:
-                    self.client = QdrantClient(
-                        host="localhost",
-                        port=6333,
-                        timeout=120,
-                        grpc_port=6334,
-                        prefer_grpc=False,
-                    )
-                    logging.error(f"[QDrantIndexer] Insert points exception {repr(e)}")
-                    continue
-
-            self.client.update_collection(
-                collection_name=collection_alias_map[collection_id],
-                optimizer_config=models.OptimizersConfigDiff(indexing_threshold=20000),
-            )
-
-        # create an alias
-        for collection_id, collection_alias_id in collection_alias_map.items():
-            logging.info(
-                f"[QDrantIndexer] Create new alias for collection {collection_id} -> {collection_alias_map[collection_id]}"
-            )
-            try:
-                self.client.update_collection_aliases(
-                    change_aliases_operations=[
-                        models.CreateAliasOperation(
-                            create_alias=models.CreateAlias(
-                                collection_name=collection_alias_id,
-                                alias_name=collection_id,
-                            )
-                        )
-                    ]
-                )
-            except Exception as e:
-                logging.error(f"[QDrantIndexer] Insert points exception {repr(e)}")
-                continue
 
     def search(self, queries, filters, size=100):
 
@@ -272,7 +141,9 @@ class QDrantIndexer(IndexerPlugin):
             # print(f"++++++++++++++++ {result}", flush=True)
 
         for x in results[:1]:
+            print("############", flush=True)
             print(x, flush=True)
+            print("############", flush=True)
 
         results = sorted(results, key=lambda x: -x.score)
         results = [
