@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia'
 import logo from '@/assets/logo.png'
 import SearchBar from '@/components/SearchBar.vue'
 import ImageListViewer from '@/components/ImageListViewer.vue'
+import WeightsDrawer from '@/components/drawers/WeightsDrawer.vue'
 
 import { useSearchStore } from '@/stores/search'
 import { useHelper } from '@/composables/helper'
@@ -146,7 +147,7 @@ const exportDrawer = computed({
       </v-list>
     </v-navigation-drawer>
 
-    <v-navigation-drawer v-model="tuneDrawer"> </v-navigation-drawer>
+    <WeightsDrawer v-model="tuneDrawer" />
     <v-navigation-drawer v-model="filterDrawer"> </v-navigation-drawer>
     <v-navigation-drawer v-model="viewDrawer"> </v-navigation-drawer>
     <v-navigation-drawer v-model="chatDrawer"> </v-navigation-drawer>
@@ -162,6 +163,10 @@ const exportDrawer = computed({
 </template>
 
 <style scoped>
+.second-drawer {
+  margin: 5px;
+}
+
 .logo {
   align-items: center;
   cursor: pointer;

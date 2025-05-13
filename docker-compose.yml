@@ -48,7 +48,7 @@ services:
     command: uv run --package analyser analyser/src/analyser/server.py -v -c analyser/config.json
 
   postgres:
-    image: postgres:13.2
+    image: postgres:17.5
     volumes:
       - ./data/db/:/var/lib/postgresql/data
     environment:

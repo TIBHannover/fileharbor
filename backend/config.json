@@ -12,7 +12,7 @@
     "upload_root": "/data/upload/",
     "media_url": "http://localhost/media/",
     "upload_url": "http://localhost/upload/",
-    "grpc_host": "localhost",
+    "grpc_host": "analyser",
     "grpc_port": "50051",
     "image_resolutions": [
         {
