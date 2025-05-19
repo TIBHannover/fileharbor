@@ -306,6 +306,7 @@ class Client:
         plugins: list = None,
         download: bool = True,
         resolutions=[{"min_dim": 200, "suffix": "_m"}, {"suffix": ""}],
+        generate_url_id: bool = False,
     ):
         if not isinstance(paths, (list, set)):
             ext = os.path.splitext(paths)[1]
@@ -320,6 +321,17 @@ class Client:
                 raise
         else:
             entries = list_images(paths)
+
+        if generate_url_id:
+            entries = entries.map(
+                lambda x: {
+                    **x,
+                    "id": uuid.uuid5(uuid.NAMESPACE_URL, x["origin"]["link"]),
+                }
+            )
+
+        print(entries[0])
+        exit()
 
         if download:
             entries_to_download = [
@@ -611,125 +623,6 @@ class Client:
 
         return response
 
-    # def build_indexer(self, rebuild=False, collections=None):
-    #     channel = grpc.insecure_channel(
-    #         f"{self.host}:{self.port}",
-    #         options=[
-    #             ("grpc.max_send_message_length", 50 * 1024 * 1024),
-    #             ("grpc.max_receive_message_length", 50 * 1024 * 1024),
-    #         ],
-    #     )
-
-    #     stub = analyser_pb2_grpc.IndexerStub(channel)
-    #     request = analyser_pb2.BuildIndexerRequest(
-    #         collections=collections, rebuild=rebuild
-    #     )
-
-    #     response = stub.build_indexer(request)
-
-    #     return response
-
-    # def build_feature_cache(self):
-    #     channel = grpc.insecure_channel(
-    #         f"{self.host}:{self.port}",
-    #         options=[
-    #             ("grpc.max_send_message_length", 50 * 1024 * 1024),
-    #             ("grpc.max_receive_message_length", 50 * 1024 * 1024),
-    #         ],
-    #     )
-
-    #     stub = analyser_pb2_grpc.IndexerStub(channel)
-    #     request = analyser_pb2.BuildFeatureCacheRequest()
-
-    #     response = stub.build_feature_cache(request)
-
-    #     return response
-
-    # def dump(self, output_path, origin):
-    #     channel = grpc.insecure_channel(
-    #         f"{self.host}:{self.port}",
-    #         options=[
-    #             ("grpc.max_send_message_length", 50 * 1024 * 1024),
-    #             ("grpc.max_receive_message_length", 50 * 1024 * 1024),
-    #         ],
-    #     )
-
-    #     stub = analyser_pb2_grpc.IndexerStub(channel)
-    #     request = analyser_pb2.DumpRequest(origin=origin)
-
-    #     with open(output_path, "wb") as f:
-    #         for i, x in enumerate(stub.dump(request)):
-    #             f.write(x.entry)
-
-    #             if i % 1000 == 0:
-    #                 print(i)
-
-    # def load(self, input_path):
-    #     channel = grpc.insecure_channel(
-    #         f"{self.host}:{self.port}",
-    #         options=[
-    #             ("grpc.max_send_message_length", 50 * 1024 * 1024),
-    #             ("grpc.max_receive_message_length", 50 * 1024 * 1024),
-    #         ],
-    #     )
-
-    #     stub = analyser_pb2_grpc.IndexerStub(channel)
-
-    #     def entry_generator(path, blacklist=None):
-    #         with open(path, "rb") as f:
-    #             unpacker = msgpack.Unpacker(f)
-
-    #             for entry in unpacker:
-    #                 if blacklist is not None and entry["id"] in blacklist:
-    #                     continue
-
-    #                 yield analyser_pb2.LoadRequest(entry=msgpack.packb(entry))
-
-    #     time_start = time.time()
-
-    #     blacklist = set()
-    #     try_count = 20
-    #     count = 0
-
-    #     with tqdm(desc="Loading") as pbar:
-    #         while try_count > 0:
-    #             try:
-    #                 gen_iter = entry_generator(input_path, blacklist)
-
-    #                 for i, entry in enumerate(stub.load(gen_iter)):
-    #                     blacklist.add(entry.id)
-    #                     pbar.update()
-    #                     count += 1
-
-    #                     if count % 1000 == 0:
-    #                         speed = count / (time.time() - time_start)
-    #                         logging.info(f"Client: Loading {count} (speed: {speed})")
-
-    #                 try_count = 0
-    #             except KeyboardInterrupt:
-    #                 raise
-    #             except Exception as e:
-    #                 logging.error(e)
-    #                 try_count -= 1
-
-    # def aggregate(self, part, type, field_name, size):
-    #     channel = grpc.insecure_channel(
-    #         f"{self.host}:{self.port}",
-    #         options=[
-    #             ("grpc.max_send_message_length", 50 * 1024 * 1024),
-    #             ("grpc.max_receive_message_length", 50 * 1024 * 1024),
-    #         ],
-    #     )
-
-    #     stub = analyser_pb2_grpc.IndexerStub(channel)
-    #     request = analyser_pb2.AggregateRequest(
-    #         type=type, part=part, field_name=field_name, size=size
-    #     )
-
-    #     response = stub.aggregate(request)
-
-    #     return response
-
     def create_collection(self, parameters):
         channel = grpc.insecure_channel(
             f"{self.host}:{self.port}",
@@ -775,6 +668,9 @@ def parse_args():
 
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose output")
     parser.add_argument("-d", "--debug", action="store_true", help="verbose output")
+    parser.add_argument(
+        "-g", "--generate-url-id", action="store_true", help="verbose output"
+    )
     # parser.add_argument('-l', '--list', help='list all plugins')
 
     parser.add_argument("--host", help="")
@@ -886,7 +782,8 @@ def main():
 
         client.indexing(
             paths=args.path,
-            image_paths=args.image_paths,  # , collection=args.collection
+            image_paths=args.image_paths,  # , collection=args.collection,
+            generate_url_id=args.generate_url_id,
         )
 
     elif args.task == "get":
