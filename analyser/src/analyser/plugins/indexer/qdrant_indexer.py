@@ -148,26 +148,19 @@ class QDrantIndexer(IndexerPlugin):
                 with_vectors=True,
                 # search_params=models.SearchParams(hnsw_ef=512, exact=True),
             )
-            results.extend(result)
-            # print(f"++++++++++++++++ {result}", flush=True)
+            results.extend(
+                [
+                    {
+                        "id": uuid.UUID(x.id).hex,
+                        "meta": x.payload,
+                        "score": x.score * q.get("weight", 1.0),
+                        "features": [],
+                    }
+                    for x in result
+                ]
+            )
 
-        for x in results[:1]:
-            print("############", flush=True)
-            print(x, flush=True)
-            print("############", flush=True)
-
-        results = sorted(results, key=lambda x: -x.score)
-        results = [
-            {
-                "id": uuid.UUID(x.id).hex,
-                "meta": x.payload,
-                "score": x.score,
-                "features": [],
-            }
-            for x in results
-        ]
-        for x in results[:2]:
-            print(x, flush=True)
+        results = sorted(results, key=lambda x: -x["score"])
 
         return results
 
