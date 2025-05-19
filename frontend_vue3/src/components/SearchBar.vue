@@ -1,6 +1,6 @@
 <template>
   <v-combobox
-    v-model="query"
+    v-model="queries"
     class="mx-1 sbar"
     @keyup.enter="submit($event, (random = false))"
     :placeholder="$t('home.search.placeholder')"
@@ -55,32 +55,34 @@ import { ref, watch } from 'vue'
 import { useSearchStore } from '@/stores/search'
 import { useHelper } from '@/composables/helper'
 
-const search_store = useSearchStore()
-const query = ref([{ type: 'txt', positive: true, value: 'ceiling painting' }])
+const searchStore = useSearchStore()
+
+const queries = ref([{ type: 'txt', positive: true, value: 'ceiling painting' }])
 
 const helper = useHelper()
 
 function submit(event, random = false) {
   console.log('SUBMIT')
-  search_store.search(query.value)
+  searchStore.setQueries(queries.value)
+  searchStore.search()
 }
 
 function remove(index) {
   if (index === -1) {
-    this.query = []
+    this.queries = []
   } else {
-    this.query.splice(index, 1)
+    this.queries.splice(index, 1)
   }
 }
 function toggle(index) {
-  const { positive } = this.query[index]
-  this.query[index].positive = !positive
+  const { positive } = this.queries[index]
+  this.queries[index].positive = !positive
 }
 watch(
-  query,
+  queries,
   async (n, o) => {
     if (!helper.isEqual(n, o)) {
-      let new_query = []
+      let new_queries = []
       n.every((value) => {
         if (typeof value === 'string') {
           let positive = true
@@ -88,17 +90,17 @@ watch(
             value = value.slice(1)
             positive = false
           }
-          new_query.push({ type: 'txt', positive, value })
+          new_queries.push({ type: 'txt', positive, value })
         } else if (typeof value === 'object') {
           if (value.example) {
-            query = value.entries
+            queries = value.entries
             return false
           }
-          new_query.push(value)
+          new_queries.push(value)
         }
         return true
       })
-      query.value = new_query
+      queries.value = new_queries
     }
   },
   { deep: true },

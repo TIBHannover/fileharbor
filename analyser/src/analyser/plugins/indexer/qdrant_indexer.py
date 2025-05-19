@@ -39,6 +39,17 @@ class QDrantIndexer(IndexerPlugin):
             host="qdrant", port=6333, timeout=120, grpc_port=6334, prefer_grpc=False
         )
 
+    def get_collection_indexes(self, name: str = None):
+        if name is None:
+            name = "default"
+        results = []
+        collection_info = self.client.get_collection(name)
+
+        for k, v in collection_info.config.params.vectors.items():
+            results.append({"name": k, "size": v.size})
+
+        return results
+
     def create_collection(self, name, indexes: List[Dict]):
 
         # TODO add lock here

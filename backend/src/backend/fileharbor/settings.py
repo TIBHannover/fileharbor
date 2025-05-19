@@ -210,6 +210,11 @@ IMAGE_RESOLUTIONS = [
     {"min_dim": 1080, "suffix": ""},
 ]
 
+DEFAULT_INDEXES = [
+    {"name": "clip_text", "weight": 0.5},
+    {"name": "clip_image", "weight": 0.5},
+]
+
 
 import json
 

@@ -105,8 +105,20 @@ class SearchJob:
                     {"field": term.text.field, "query": term.text.query, "flag": flag}
                 )
 
+        # test if the index exist in this collection
+        collection_indexes_info = cls.indexer_manager.get_collection_indexes()
+
+        collection_indexes_info_lut = {
+            x["name"]: x["size"] for x in collection_indexes_info
+        }
+        print("#################################")
+        print(collection_indexes_info, flush=True)
+        print(collection_indexes_info_lut, flush=True)
+        print("#################################")
+
         results = []
         for term in request.terms:
+            print(term.vector.vector_indexes, flush=True)
 
             term_type = term.WhichOneof("term")
             logging.error(term_type)
@@ -118,8 +130,9 @@ class SearchJob:
                 feature_vec = list(plugin_results.results[0].result.feature.feature)
                 term_results = cls.indexer_manager.search(
                     queries=[
-                        {"index_name": k, "value": feature_vec}
+                        {"index_name": k.name, "value": feature_vec}
                         for k in term.vector.vector_indexes
+                        if k.name in collection_indexes_info_lut
                     ],
                     filters=filters,
                 )

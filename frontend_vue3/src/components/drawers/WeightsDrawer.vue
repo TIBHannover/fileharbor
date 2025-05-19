@@ -2,12 +2,12 @@
 import { ref, watch, computed, defineModel } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import { useSearchStore } from '@/stores/search'
 const { t } = useI18n()
 
 const model = defineModel()
 
-const visualWeight = ref(50)
-const textualWeight = ref(50)
+const searchStore = useSearchStore()
 
 const weights = ref({
   color: {
@@ -16,27 +16,27 @@ const weights = ref({
     name: t('modal.weights.group.color'),
     advanced: false,
     value: 0.0,
-    items: [{ key: 'yuv_histogram_feature', name: 'YUV Histogram' }],
+    items: [{ key: 'yuv_histogram', name: 'YUV Histogram' }],
   },
   content: {
-    default: 'clip_embedding_feature',
+    default: 'clip_image',
     icon: 'mdi-image-outline',
     name: t('modal.weights.group.content'),
     advanced: false,
     value: 0.5,
     items: [
-      { key: 'clip_embedding_feature', name: 'CLIP Embedding' },
-      { key: 'byol_embedding_feature', name: 'Wikimedia Embedding' },
-      { key: 'image_net_inception_feature', name: 'ImageNet Embedding' },
+      { key: 'clip_image', name: 'CLIP Embedding' },
+      { key: 'byol_wikimedia', name: 'Wikimedia Embedding' },
+      { key: 'imagenet_inception', name: 'ImageNet Embedding' },
     ],
   },
   meta: {
-    default: 'clip_embedding_feature',
+    default: 'clip_text',
     icon: 'mdi-text-box-outline',
     name: t('modal.weights.group.meta'),
     advanced: false,
     value: 0.5,
-    items: [{ key: 'clip_embedding_feature', name: 'CLIP Embedding' }],
+    items: [{ key: 'clip_text', name: 'CLIP Embedding' }],
   },
 })
 
@@ -45,6 +45,16 @@ function check(key) {
   if (total === 0) {
     this.weights[key].value = 0.5
   }
+}
+
+function update() {
+  let newWeights = []
+  Object.values(weights.value).forEach((element) => {
+    console.log(element.value)
+    newWeights.push({ name: element.default, value: element.value })
+  })
+  searchStore.setGlobalWeights(newWeights)
+  searchStore.search()
 }
 </script>
 
@@ -79,6 +89,9 @@ function check(key) {
           </template>
         </v-slider>
       </div>
+      <v-btn color="secondary" class="update-button" @click="update">{{
+        t('modal.weights.update')
+      }}</v-btn>
     </div>
   </v-navigation-drawer>
 </template>
@@ -86,5 +99,9 @@ function check(key) {
 <style scoped>
 .drawer {
   margin: 5px;
+}
+.update-button {
+  width: 100%;
+  margin-top: 1em;
 }
 </style>

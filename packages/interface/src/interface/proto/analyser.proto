@@ -174,9 +174,14 @@ message NumberSearchTerm {
   Flag flag = 6;
 }
 
+message PluginVectorSearchIndex {
+  string name = 1;
+  float weight = 2;
+}
+
 message PluginVectorSearchTerm {
   AnalyseRequest analyse = 1;
-  repeated string vector_indexes = 4;
+  repeated PluginVectorSearchIndex vector_indexes = 4;
 
   enum Flag {
     POSITIVE = 0;

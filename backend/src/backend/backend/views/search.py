@@ -19,9 +19,6 @@ from backend.utils import (
     upload_url_to_image,
 )
 
-if DjangoSettings.INDEXER_PATH is not None:
-    sys.path.append(DjangoSettings.INDEXER_PATH)
-
 
 from interface import analyser_pb2, analyser_pb2_grpc
 from interface.utils import (
@@ -39,6 +36,8 @@ logger = logging.getLogger(__name__)
 class Search(RPCView):
     def parse_search_request(self, params, ids=None, collection_ids=None):
         grpc_request = analyser_pb2.SearchRequest()
+
+        print(params, flush=True)
 
         weights = {"clip_embedding_feature": 1}
         cluster = {"type": "kmeans", "n": 1}
@@ -162,15 +161,21 @@ class Search(RPCView):
         # if ids is not None:
         #     grpc_request.ids.extend(ids)
 
-        if params.get("query"):
-            for q in params["query"]:
+        if params.get("queries"):
+            for q in params["queries"]:
                 if q.get("type") == "txt":
                     term = grpc_request.terms.add()
                     term.vector.analyse.plugin = "ClipTextEmbeddingFeature"
                     input_field = term.vector.analyse.inputs.add()
                     input_field.name = "text"
                     input_field.string.text = q["value"]
-                    term.vector.vector_indexes.extend(["clip_text", "clip_image"])
+
+                    for weight in q.get("weights", DjangoSettings.DEFAULT_INDEXES):
+                        plugin_vector_search_index = term.vector.vector_indexes.add()
+                        plugin_vector_search_index.name = weight.get("name", "")
+                        plugin_vector_search_index.weight = weight.get("value", 0.0)
+
+                    # term.vector.vector_indexes.extend(["clip_text", "clip_image"])
 
                     # plugins = term.image_text.plugins.add()
                     # plugins.name = "clip_embedding_feature"

@@ -2,14 +2,37 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import axios from '../plugins/axios'
 
+import { useHelper } from '@/composables/helper'
+
 export const useSearchStore = defineStore('search', () => {
   const resultList = ref([])
   const isLoading = ref(false)
   const jobId = ref(null)
 
-  function search(query) {
+  const queries = ref([])
+  const globalWeights = ref([])
+
+  function setGlobalWeights(newGlobalWeights) {
+    globalWeights.value = newGlobalWeights
+  }
+
+  function setQueries(newQueries) {
+    queries.value = newQueries
+  }
+
+  function search() {
+    console.log(queries)
+    let queriesWithWeights = queries.value.map((q) => {
+      const helper = useHelper()
+      if (helper.keyInObj(q, 'weights')) {
+        return q
+      }
+      q.weights = globalWeights.value
+      return q
+    })
+
     const params = {
-      query: query,
+      queries: queriesWithWeights,
     }
     axios
       .post('/search', { params })
@@ -28,6 +51,8 @@ export const useSearchStore = defineStore('search', () => {
         }
       })
       .catch(function (error) {
+        jobId.value = null
+        isLoading.value = false
         // handle error
         console.log(error)
       })
@@ -54,10 +79,21 @@ export const useSearchStore = defineStore('search', () => {
         }
       })
       .catch(function (error) {
+        jobId.value = null
+        isLoading.value = false
         // handle error
         console.log(error)
       })
   }
 
-  return { search, fetchSearchResults, resultList, isLoading }
+  return {
+    resultList,
+    isLoading,
+    jobId,
+    queries,
+    setGlobalWeights,
+    setQueries,
+    search,
+    fetchSearchResults,
+  }
 })

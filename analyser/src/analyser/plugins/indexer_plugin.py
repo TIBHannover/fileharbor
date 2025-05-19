@@ -45,6 +45,21 @@ class IndexerPluginManager(Manager):
                 if "register" in function_dir:
                     a.register(self)
 
+    def get_collection_indexes(self, name: str = None):
+        if name is None:
+            name = "default"
+
+        # TODO add lock here
+        logging.info(f"[IndexerPluginManager]: get_collection_indexes")
+
+        for plugin in self.plugin_list:
+            plugin = plugin["plugin"]
+            logging.info(f"[IndexerPluginManager]: {plugin.name}")
+
+            return plugin.get_collection_indexes(
+                name=name,
+            )
+
     def create_collection(self, name, indexes: List[Dict]):
 
         # TODO add lock here
