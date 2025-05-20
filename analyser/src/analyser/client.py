@@ -322,16 +322,24 @@ class Client:
         else:
             entries = list_images(paths)
 
+
+        print(len(entries))
         if generate_url_id:
-            entries = entries.map(
+            entries = map(
                 lambda x: {
                     **x,
-                    "id": uuid.uuid5(uuid.NAMESPACE_URL, x["origin"]["link"]),
-                }
+                    "id": uuid.uuid5(uuid.NAMESPACE_URL, x["origin"]["link"]).hex,
+                }, entries
             )
+            entries = map(lambda x: {**x, 
+        "path": id_to_path(x["id"], image_paths)}, entries)
 
-        print(entries[0])
-        exit()
+        entries = list(entries)
+        # for x in entries[:2]:
+        #     print(x)
+
+        # exit()
+
 
         if download:
             entries_to_download = [
