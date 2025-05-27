@@ -156,13 +156,12 @@ class IndexerServicer(analyser_pb2_grpc.IndexerServicer):
                 }
                 try:
                     image = iio.imread(data_point.image.encoded)
-                    logging.error(image.shape)
                 except Exception as e:
 
                     yield analyser_pb2.IndexingReply(
                         status="error", id=data_id, indexing_job_id=job_id
                     )
-                    print(e)
+                    logging.error(e)
                     continue
 
                 yield analyser_pb2.IndexingReply(
