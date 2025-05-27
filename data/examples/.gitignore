@@ -1,0 +1,9 @@
+# Ignore everything
+*
+
+# But not these files...
+!.gitignore
+!cat.jpg
+!landscape.jpg
+!wikipedia.jsonl
+!wikipedia_small.jsonl
