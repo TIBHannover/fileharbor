@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-from . import analyser_pb2 as analyser__pb2
+from . import searcher_pb2 as searcher__pb2
 
 GRPC_GENERATED_VERSION = "1.70.0"
 GRPC_VERSION = grpc.__version__
@@ -21,14 +21,14 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f"The grpc package installed is at version {GRPC_VERSION},"
-        + f" but the generated code in analyser_pb2_grpc.py depends on"
+        + f" but the generated code in searcher_pb2_grpc.py depends on"
         + f" grpcio>={GRPC_GENERATED_VERSION}."
         + f" Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}"
         + f" or downgrade your generated code using grpcio-tools<={GRPC_VERSION}."
     )
 
 
-class AnalyserStub(object):
+class SearcherStub(object):
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -37,62 +37,62 @@ class AnalyserStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.list_plugins = channel.unary_unary(
-            "/iart.indexer.Analyser/list_plugins",
-            request_serializer=analyser__pb2.ListPluginsRequest.SerializeToString,
-            response_deserializer=analyser__pb2.ListPluginsReply.FromString,
+        self.search = channel.unary_unary(
+            "/iart.indexer.Searcher/search",
+            request_serializer=searcher__pb2.SearchRequest.SerializeToString,
+            response_deserializer=searcher__pb2.SearchReply.FromString,
             _registered_method=True,
         )
-        self.analyse = channel.unary_unary(
-            "/iart.indexer.Analyser/analyse",
-            request_serializer=analyser__pb2.AnalyseRequest.SerializeToString,
-            response_deserializer=analyser__pb2.AnalyseReply.FromString,
+        self.list_search_result = channel.unary_unary(
+            "/iart.indexer.Searcher/list_search_result",
+            request_serializer=searcher__pb2.ListSearchResultRequest.SerializeToString,
+            response_deserializer=searcher__pb2.ListSearchResultReply.FromString,
             _registered_method=True,
         )
 
 
-class AnalyserServicer(object):
+class SearcherServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def list_plugins(self, request, context):
+    def search(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
-    def analyse(self, request, context):
+    def list_search_result(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
 
-def add_AnalyserServicer_to_server(servicer, server):
+def add_SearcherServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "list_plugins": grpc.unary_unary_rpc_method_handler(
-            servicer.list_plugins,
-            request_deserializer=analyser__pb2.ListPluginsRequest.FromString,
-            response_serializer=analyser__pb2.ListPluginsReply.SerializeToString,
+        "search": grpc.unary_unary_rpc_method_handler(
+            servicer.search,
+            request_deserializer=searcher__pb2.SearchRequest.FromString,
+            response_serializer=searcher__pb2.SearchReply.SerializeToString,
         ),
-        "analyse": grpc.unary_unary_rpc_method_handler(
-            servicer.analyse,
-            request_deserializer=analyser__pb2.AnalyseRequest.FromString,
-            response_serializer=analyser__pb2.AnalyseReply.SerializeToString,
+        "list_search_result": grpc.unary_unary_rpc_method_handler(
+            servicer.list_search_result,
+            request_deserializer=searcher__pb2.ListSearchResultRequest.FromString,
+            response_serializer=searcher__pb2.ListSearchResultReply.SerializeToString,
         ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-        "iart.indexer.Analyser", rpc_method_handlers
+        "iart.indexer.Searcher", rpc_method_handlers
     )
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers("iart.indexer.Analyser", rpc_method_handlers)
+    server.add_registered_method_handlers("iart.indexer.Searcher", rpc_method_handlers)
 
 
 # This class is part of an EXPERIMENTAL API.
-class Analyser(object):
+class Searcher(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def list_plugins(
+    def search(
         request,
         target,
         options=(),
@@ -107,9 +107,9 @@ class Analyser(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/iart.indexer.Analyser/list_plugins",
-            analyser__pb2.ListPluginsRequest.SerializeToString,
-            analyser__pb2.ListPluginsReply.FromString,
+            "/iart.indexer.Searcher/search",
+            searcher__pb2.SearchRequest.SerializeToString,
+            searcher__pb2.SearchReply.FromString,
             options,
             channel_credentials,
             insecure,
@@ -122,7 +122,7 @@ class Analyser(object):
         )
 
     @staticmethod
-    def analyse(
+    def list_search_result(
         request,
         target,
         options=(),
@@ -137,9 +137,9 @@ class Analyser(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/iart.indexer.Analyser/analyse",
-            analyser__pb2.AnalyseRequest.SerializeToString,
-            analyser__pb2.AnalyseReply.FromString,
+            "/iart.indexer.Searcher/list_search_result",
+            searcher__pb2.ListSearchResultRequest.SerializeToString,
+            searcher__pb2.ListSearchResultReply.FromString,
             options,
             channel_credentials,
             insecure,

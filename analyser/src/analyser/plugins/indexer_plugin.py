@@ -6,7 +6,29 @@ import importlib
 from typing import List, Dict
 
 from analyser.utils.plugin.manager import Manager
+from analyser.utils.plugin.factory import Factory
 from analyser.utils.plugin.plugin import Plugin
+
+
+class IndexerPlugin(Plugin):
+
+    def __init__(self, **kwargs):
+        super(IndexerPlugin, self).__init__(**kwargs)
+
+    def indexing(self, train_entries, index_entries):
+        pass
+
+    def search(self, queries, size=100):
+        pass
+
+
+class IndexerFactory(
+    Factory,
+    plugins_path=os.path.join(os.path.abspath(os.path.dirname(__file__)), "indexer"),
+    plugin_import_path="analyser.plugins.indexer",
+    plugin_cls=IndexerPlugin,
+):
+    pass
 
 
 class IndexerPluginManager(Manager):
@@ -155,16 +177,3 @@ class IndexerPluginManager(Manager):
             plugin.delete(
                 collections=collections,
             )
-
-
-class IndexerPlugin(Plugin):
-    _type = "indexer"
-
-    def __init__(self, **kwargs):
-        super(IndexerPlugin, self).__init__(**kwargs)
-
-    def indexing(self, train_entries, index_entries):
-        pass
-
-    def search(self, queries, size=100):
-        pass

@@ -5,12 +5,15 @@ import logging
 
 from analyser.utils.plugin.manager import Manager
 from analyser.utils.plugin.plugin import Plugin
+from analyser.utils.plugin.factory import Factory
+
+# from analyser.inference import InferenceServerFactory
 
 from packaging import version
 from typing import Any, Dict, Type
 from analyser.utils import convert_name
 
-from interface import analyser_pb2
+from interface import analyser_pb2, common_pb2
 
 
 class ComputePluginResult:
@@ -36,42 +39,34 @@ class ComputePlugin(Plugin):
         **kwargs,
     ):
         super().__init_subclass__(**kwargs)
-        cls._requires = requires
-        cls._provides = provides
-        cls._parameters = parameters
-        cls._name = convert_name(cls.__name__)
+        cls.requires = requires
+        cls.provides = provides
+        cls.parameters = parameters
+        cls.cls_name = convert_name(cls.__name__)
 
     def __init__(
         self,
         compute_plugin_manager: "ComputePluginManager",
-        inference_server: "InferenceServer",
+        inference_server_manager: "InferenceServerManager",
+        instance_name: str,
         config: Dict = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self._compute_plugin_manager = compute_plugin_manager
-        self._inference_server = inference_server
+        self._inference_server_manager = inference_server_manager
         self._config = self._default_config
+        self.instance_name = instance_name
         if config is not None:
             self._config.update(config)
-
-    @classmethod
-    @property
-    def requires(cls):
-        return cls._requires
-
-    @classmethod
-    @property
-    def provides(cls):
-        return cls._provides
 
     @property
     def compute_plugin_manager(self):
         return self._compute_plugin_manager
 
     @property
-    def inference_server(self):
-        return self._inference_server
+    def inference_server_manager(self):
+        return self._inference_server_manager
 
     @staticmethod
     def map_analyser_request_to_dict(request):
@@ -94,22 +89,22 @@ class ComputePlugin(Plugin):
             if parameter.name not in parameter_dict:
                 parameter_dict[parameter.name] = []
             # TODO convert datatype
-            if parameter.type == analyser_pb2.FLOAT_TYPE:
+            if parameter.type == common_pb2.FLOAT_TYPE:
                 parameter_dict[parameter.name] = float(
                     parameter.content.decode("utf-8")
                 )
-            if parameter.type == analyser_pb2.INT_TYPE:
+            if parameter.type == common_pb2.INT_TYPE:
                 parameter_dict[parameter.name] = int(parameter.content.decode("utf-8"))
-            if parameter.type == analyser_pb2.STRING_TYPE:
+            if parameter.type == common_pb2.STRING_TYPE:
                 parameter_dict[parameter.name] = str(parameter.content.decode("utf-8"))
-            if parameter.type == analyser_pb2.BOOL_TYPE:
+            if parameter.type == common_pb2.BOOL_TYPE:
                 parameter_dict[parameter.name] = bool(parameter.content.decode("utf-8"))
 
         return input_dict, parameter_dict
 
     @staticmethod
     def map_dict_to_analyser_request(inputs, parameters):
-        request = analyser_pb2.AnalyseRequest()
+        request = common_pb2.PluginRun()
         for key, values in inputs.items():
             for value in values:
                 input_field = request.inputs.add()
@@ -132,98 +127,94 @@ class ComputePlugin(Plugin):
             parameter.content = str(value).encode()
 
             if isinstance(value, float):
-                parameter.type = analyser_pb2.FLOAT_TYPE
+                parameter.type = common_pb2.FLOAT_TYPE
             if isinstance(value, int):
-                parameter.type = analyser_pb2.INT_TYPE
+                parameter.type = common_pb2.INT_TYPE
             if isinstance(value, str):
-                parameter.type = analyser_pb2.STRING_TYPE
+                parameter.type = common_pb2.STRING_TYPE
 
         return request
 
-    def __call__(
-        self, analyse_request: analyser_pb2.AnalyseRequest
-    ) -> ComputePluginResult:
-        return self.call(analyse_request)
+    def __call__(self, plugin_run: common_pb2.PluginRun) -> ComputePluginResult:
+        return self.call(plugin_run)
 
 
-# __all__ = []
+class ComputePluginFactory(
+    Factory,
+    plugins_path=os.path.join(os.path.abspath(os.path.dirname(__file__)), "compute"),
+    plugin_import_path="analyser.plugins.compute",
+    plugin_cls=ComputePlugin,
+):
+    pass
 
 
-class ComputePluginManager(Manager):
-    _plugins = {}
-
-    def __init__(self, **kwargs):
+class ComputePluginManager:
+    def __init__(
+        self,
+        config: Dict,
+        inference_server_manager: "InferenceServerManager",
+        compute_plugin_factory: ComputePluginFactory = None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
-        self.find()
-        self.plugin_list = self.build_plugin_list()
+        self.config = config
 
-    @classmethod
-    def export(cls, name):
-        def export_helper(plugin):
-            cls._plugins[name] = plugin
-            return plugin
+        if compute_plugin_factory is None:
+            compute_plugin_factory = ComputePluginFactory()
 
-        return export_helper
+        self.compute_plugin_factory = compute_plugin_factory
+        self.inference_server_manager = inference_server_manager
 
-    def plugins(self):
-        return self._plugins
+        self.compute_plugins = {}
+        for plugin in self.config.get("compute_plugin", []):
 
-    def find(
-        self, path=os.path.join(os.path.abspath(os.path.dirname(__file__)), "compute")
-    ):
-        file_re = re.compile(r"(.+?)\.py$")
-        for pl in os.listdir(path):
-            match = re.match(file_re, pl)
-            if match:
-                a = importlib.import_module(
-                    "analyser.plugins.compute.{}".format(match.group(1))
+            plugin_name = plugin.get("name")
+            if plugin_name is None and not isinstance(plugin_name, str):
+                # logging.error(
+                #     "Inference server has no name field or it is not a string."
+                # )
+                exit(-1)
+
+            plugin_type = plugin.get("type")
+            if plugin_type is None and not isinstance(plugin_type, str):
+                logging.error(
+                    "Inference server has no name field or it is not a string."
                 )
-                # print(a)
-                function_dir = dir(a)
-                if "register" in function_dir:
-                    a.register(self)
+                exit(-1)
 
-    def build_plugin(self, plugin: str, config: Dict = None) -> ComputePlugin:
-        if plugin not in self._plugins:
-            return None
-        plugin_to_run = None
-        for plugin_name, plugin_cls in self._plugins.items():
-            if plugin_name == plugin:
-                plugin_to_run = plugin_cls
+            compute_plugin_inference_server_name = plugin.get("inference")
+            if not isinstance(compute_plugin_inference_server_name, (str, type(None))):
 
-        if plugin_to_run is None:
-            logging.error(f"[AnalyserPluginManager] plugin: {plugin} not found")
-            return None
+                logging.error(
+                    f'Compute plugin "{plugin_name}" has a invalid inference type.'
+                )
+                exit(-1)
 
-        return plugin_to_run(config)
+            compute_plugin = compute_plugin_factory.build(
+                plugin_type,
+                config=plugin.get("params", {}),
+                instance_name=plugin_name,
+                compute_plugin_manager=self,
+                inference_server_manager=inference_server_manager,
+            )
 
-    def run(
-        self, images, filter_plugins=None, plugins=None, configs=None, batchsize=128
-    ):
-        if plugins is None and configs is None:
-            plugins = self.plugin_list
+            if compute_plugin_inference_server_name is not None:
+                logging.info("register_compute_plugin")
+                inference_server_manager.register_compute_plugin(
+                    compute_plugin_inference_server_name, compute_plugin
+                )
 
-        if filter_plugins is None:
-            filter_plugins = [] * len(images)
-        # TODO use batch size
-        for image, filters in zip(images, filter_plugins):
-            plugin_result_list = {"image": image, "plugins": []}
-            for plugin in plugins:
-                plugin = plugin["plugin"]
-                plugin_version = version.parse(str(plugin.version))
+            self.compute_plugins[plugin_name] = {
+                "compute_plugin": compute_plugin,
+                "config": plugin,
+                "inference_server_name": compute_plugin_inference_server_name,
+            }
 
-                founded = False
-                for f in filters:
-                    f_version = version.parse(str(f["version"]))
-                    if f["plugin"] == plugin.name and f_version >= plugin_version:
-                        founded = True
+    def __iter__(self):
+        yield from self.compute_plugins.items()
 
-                if founded:
-                    continue
+    def __getitem__(self, compute_plugin_name: str):
+        return self.compute_plugins[compute_plugin_name]
 
-                logging.info(f"Plugin start {plugin.name}:{plugin.version}")
-
-                plugin_results = plugin([image])
-                plugin_result_list["plugins"].append(plugin_results)
-
-            yield plugin_result_list
+    def __call__(self, compute_plugin_name: str):
+        pass

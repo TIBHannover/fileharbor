@@ -19,8 +19,12 @@ from multiprocessing.pool import ThreadPool
 from analyser import utils
 
 from interface import (
+    data_pb2,
+    common_pb2,
     analyser_pb2,
     analyser_pb2_grpc,
+    searcher_pb2,
+    searcher_pb2_grpc,
     collection_pb2,
     collection_pb2_grpc,
 )
@@ -257,12 +261,12 @@ class Client:
 
     def plugin_list(self):
         channel = grpc.insecure_channel(f"{self.host}:{self.port}")
-        stub = analyser_pb2_grpc.IndexerStub(channel)
+        stub = analyser_pb2_grpc.AnalyserStub(channel)
         response = stub.list_plugins(analyser_pb2.ListPluginsRequest())
 
         result = {}
 
-        for plugin in response.plugins:
+        for plugin in response.plugin_infos:
             if plugin.type not in result:
                 result[plugin.type] = []
 
@@ -272,10 +276,10 @@ class Client:
 
     def analyse(self, inputs, parameters, plugin: str = None):
         channel = grpc.insecure_channel(f"{self.host}:{self.port}")
-        stub = analyser_pb2_grpc.IndexerStub(channel)
+        stub = analyser_pb2_grpc.AnalyserStub(channel)
         request = analyser_pb2.AnalyseRequest()
         for i in inputs:
-            input_field = request.inputs.add()
+            input_field = request.plugin_run.inputs.add()
             if i["type"] == "image":
                 input_field.name = "image"
                 input_field.image.content = open(i["path"], "rb").read()
@@ -284,18 +288,18 @@ class Client:
                 input_field.string.text = i["text"]
 
         for p in parameters:
-            parameter_field = request.parameters.add()
+            parameter_field = request.plugin_run.parameters.add()
             parameter_field.name = p["name"]
             parameter_field.content = str(p["value"]).encode()
 
             if isinstance(p["value"], float):
-                parameter_field.type = analyser_pb2.FLOAT_TYPE
+                parameter_field.type = common_pb2.FLOAT_TYPE
             if isinstance(p["value"], int):
-                parameter_field.type = analyser_pb2.INT_TYPE
+                parameter_field.type = common_pb2.INT_TYPE
             if isinstance(p["value"], str):
-                parameter_field.type = analyser_pb2.STRING_TYPE
+                parameter_field.type = common_pb2.STRING_TYPE
 
-        request.plugin = plugin
+        request.plugin_run.plugin = plugin
         response = stub.analyse(request)
         return response
 
@@ -322,24 +326,24 @@ class Client:
         else:
             entries = list_images(paths)
 
-
         print(len(entries))
         if generate_url_id:
             entries = map(
                 lambda x: {
                     **x,
                     "id": uuid.uuid5(uuid.NAMESPACE_URL, x["origin"]["link"]).hex,
-                }, entries
+                },
+                entries,
             )
-            entries = map(lambda x: {**x, 
-        "path": id_to_path(x["id"], image_paths)}, entries)
+            entries = map(
+                lambda x: {**x, "path": id_to_path(x["id"], image_paths)}, entries
+            )
 
         entries = list(entries)
         # for x in entries[:2]:
         #     print(x)
 
         # exit()
-
 
         if download:
             entries_to_download = [
@@ -440,7 +444,7 @@ class Client:
                 ("grpc.keepalive_time_ms", 2**31 - 1),
             ],
         )
-        stub = analyser_pb2_grpc.IndexerStub(channel)
+        stub = analyser_pb2_grpc.AnalyserStub(channel)
 
         time_start = time.time()
         blacklist = set()
@@ -479,7 +483,7 @@ class Client:
             ],
         )
 
-        stub = analyser_pb2_grpc.IndexerStub(channel)
+        stub = analyser_pb2_grpc.AnalyserStub(channel)
         request = analyser_pb2.StatusRequest()
         request.id = job_id
 
@@ -496,7 +500,7 @@ class Client:
             ],
         )
 
-        stub = analyser_pb2_grpc.IndexerStub(channel)
+        stub = analyser_pb2_grpc.AnalyserStub(channel)
         request = analyser_pb2.SearchRequest()
 
         # a = {
@@ -536,11 +540,11 @@ class Client:
                     parameter_field.content = str(p["value"]).encode()
 
                     if isinstance(p["value"], float):
-                        parameter_field.type = analyser_pb2.FLOAT_TYPE
+                        parameter_field.type = common_pb2.FLOAT_TYPE
                     if isinstance(p["value"], int):
-                        parameter_field.type = analyser_pb2.INT_TYPE
+                        parameter_field.type = common_pb2.INT_TYPE
                     if isinstance(p["value"], str):
-                        parameter_field.type = analyser_pb2.STRING_TYPE
+                        parameter_field.type = common_pb2.STRING_TYPE
 
                 term.vector.vector_indexes.extend(params["vector_indexes"])
 
@@ -551,11 +555,11 @@ class Client:
                 term.text.query = params["query"]
                 term.text.field = params["field"]
 
-                term.text.flag = analyser_pb2.TextSearchTerm.MUST
+                term.text.flag = searcher_pb2.TextSearchTerm.MUST
                 if params["flag"] == "SHOULD":
-                    term.text.flag = analyser_pb2.TextSearchTerm.SHOULD
+                    term.text.flag = searcher_pb2.TextSearchTerm.SHOULD
                 if params["flag"] == "NOT":
-                    term.text.flag = analyser_pb2.TextSearchTerm.NOT
+                    term.text.flag = searcher_pb2.TextSearchTerm.NOT
             # if "field" in q and q["field"] is not None:
             #     type_req = q["field"]
 
@@ -624,7 +628,7 @@ class Client:
             ],
         )
 
-        stub = analyser_pb2_grpc.IndexerStub(channel)
+        stub = analyser_pb2_grpc.AnalyserStub(channel)
         request = analyser_pb2.GetRequest(id=id)
 
         response = stub.get(request)
@@ -815,6 +819,7 @@ def main():
 
     elif args.task == "analyse":
         available_plugins = client.plugin_list()
+        print(available_plugins)
         plugins = []
         plugins_selected = None
         if args.plugins:

@@ -7,21 +7,21 @@ from qdrant_client.http import models
 
 import numpy as np
 
-from analyser.plugins import IndexerPlugin, IndexerPluginManager
+from analyser.plugins import IndexerPlugin, IndexerFactory
 from analyser.utils import get_element
 
+default_config = {
+    "index_type": "cos",
+    "host": "localhost",
+    "port": 6333,
+    "grpc": {"port": 50151, "host": "localhost"},
+}
 
-@IndexerPluginManager.export("QDrantIndexer")
+default_version = 0.1
+
+
+@IndexerFactory.export("QDrantIndexer")
 class QDrantIndexer(IndexerPlugin):
-    default_config = {
-        "index_type": "cos",
-        "host": "localhost",
-        "port": 6333,
-        "grpc": {"port": 50151, "host": "localhost"},
-        # "indexing_size": 105536,
-    }
-
-    default_version = 0.1
 
     def __init__(self, **kwargs):
         super(QDrantIndexer, self).__init__(**kwargs)
@@ -40,10 +40,16 @@ class QDrantIndexer(IndexerPlugin):
         )
 
     def get_collection_indexes(self, name: str = None):
+        logging.info(f"[QDrantIndexer]: get_collection_indexes")
+
         if name is None:
             name = "default"
         results = []
-        collection_info = self.client.get_collection(name)
+        try:
+            collection_info = self.client.get_collection(name)
+        except Exception as e:
+            logging.error(e)
+            return None
 
         for k, v in collection_info.config.params.vectors.items():
             results.append({"name": k, "size": v.size})
@@ -51,9 +57,9 @@ class QDrantIndexer(IndexerPlugin):
         return results
 
     def create_collection(self, name, indexes: List[Dict]):
+        logging.info(f"[QDrantIndexer]: create_collection")
 
         # TODO add lock here
-        logging.info(f"[QDrantIndexer]: create_collection")
 
         self.client.create_collection(
             collection_name=name,

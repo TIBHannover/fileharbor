@@ -1,6 +1,6 @@
 import logging
 import requests
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 from ray import serve
 from ray.serve import Application
 from analyser.plugins.compute_plugin import ComputePlugin, ComputePluginManager
@@ -16,9 +16,9 @@ class Deployment:
     async def __call__(self, request) -> Dict[str, str]:
         data = await request.json()
 
-        from interface.analyser_pb2 import AnalyseRequest
+        from interface.common_pb2 import PluginRun
 
-        analyse_request = ParseDict(data["inputs"], AnalyseRequest())
+        analyse_request = ParseDict(data["inputs"], PluginRun())
 
         results = self.plugin(analyse_request)
 
@@ -30,25 +30,20 @@ def app_builder(args) -> Application:
     return Deployment.options(**args["options"]).bind(args["plugin"])
 
 
-@InferenceServerFactory.export("ray")
+@InferenceServerFactory.export("RayInferenceServer")
 class RayInferenceServer(InferenceServer):
     def __init__(self, config: Dict) -> None:
         super().__init__(config)
 
-    def __call__(self, plugin: str, inputs: Dict, parameters: Dict) -> Dict:
-        results = requests.post(
-            f"http://inference_ray:8000{plugin_to_run['route']}",
-            json={
-                "inputs": inputs,
-                "parameters": parameters,
-            },
-        ).json()
-        return results
-
-    def start(self, compute_plugin_manager: ComputePluginManager) -> None:
-        for compute_plugin in compute_plugin_manager.plugin_list:
-            plugin_cls = compute_plugin["plugin_cls"]
-            plugin_config = compute_plugin["config"]
+    def start(
+        self,
+        compute_plugin_list: List[ComputePlugin],
+        compute_plugin_manager: Optional[ComputePluginManager] = None,
+    ) -> None:
+        for compute_plugin in compute_plugin_list:
+            plugin_instance_name = compute_plugin.instance_name
+            logging.info("CLS" + plugin_instance_name)
+            plugin_config = compute_plugin.config
 
             if "inference" in plugin_config:
                 inference_config = plugin_config["inference"]
@@ -62,49 +57,63 @@ class RayInferenceServer(InferenceServer):
             serve.run(
                 app_builder(
                     {
-                        "plugin": plugin_cls(
-                            config=plugin_config,
-                            compute_plugin_manager=compute_plugin_manager,
-                            inference_server=self,
-                        ),
+                        "plugin": compute_plugin,
                         "options": {
-                            "name": plugin_cls.name,
+                            "name": plugin_instance_name,
                             "ray_actor_options": {"runtime_env": {"uv": requirements}},
                             "autoscaling_config": {"min_replicas": 1},
                         },
                     }
                 ),
-                route_prefix=f"/{plugin_cls.name}",
-                name=plugin_cls.name,
+                route_prefix=f"/{plugin_instance_name}",
+                name=plugin_instance_name,
             )
 
-    def __call__(self, compute_plugin_manager, plugin, request):
+    def __call__(self, compute_plugin, request):
         from interface import analyser_pb2
 
-        found = False
-        for compute_plugin in compute_plugin_manager.plugin_list:
-            plugin_key = compute_plugin["plugin_key"]
+        plugin_instance_name = compute_plugin.instance_name
 
-            plugin_cls = compute_plugin["plugin_cls"]
-            plugin_config = compute_plugin["config"]
+        # found = False
+        # for compute_plugin in compute_plugin_manager.plugin_list:
+        #     plugin_key = compute_plugin["plugin_key"]
 
-            if plugin == plugin_key:
-                found = True
-                break
+        #     plugin_cls = compute_plugin["plugin_cls"]
+        #     plugin_config = compute_plugin["config"]
 
-        if not found:
-            logging.error(f"{plugin} not found")
-            return None
+        #     if plugin == plugin_key:
+        #         found = True
+        #         break
 
-        results = ParseDict(
-            requests.post(
-                f"http://localhost:8000/{plugin_cls.name}",
+        # if not found:
+        #     logging.error(f"{plugin} not found")
+        #     return None
+        logging.info(f"http://localhost:8000/{plugin_instance_name}")
+        try:
+            response = requests.post(
+                f"http://localhost:8000/{plugin_instance_name}",
                 json={
                     "inputs": MessageToDict(request),
                 },
-            ).json(),
-            analyser_pb2.AnalyseReply(),
-        )
+            )
+        except Exception as e:
+            logging.error(f"{e}")
+            return None
+
+        try:
+            response_dict = response.json()
+        except Exception as e:
+            logging.error(f"{response} {e}")
+            return None
+
+        try:
+            return ParseDict(
+                response_dict,
+                analyser_pb2.AnalyseReply(),
+            )
+        except Exception as e:
+            logging.error(f"{response} {e}")
+            return None
         # logging.info(f"[AnalyserPluginManager] {run_id} plugin: {plugin_to_run}")
         # logging.info(f"[AnalyserPluginManager] {run_id} data: {[{k:x.id} for k,x in inputs.items()]}")
         # logging.info(f"[AnalyserPluginManager] {run_id} parameters: {parameters}")

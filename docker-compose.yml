@@ -19,9 +19,6 @@ services:
         source: ./data/
         target: /data/
       - type: bind
-        source: ./data/analyser_venv
-        target: /fileharbor/.venv
-      - type: bind
         source: ./data/ray/
         target: /tmp/ray/
       - type: bind
@@ -29,30 +26,24 @@ services:
         target: /models/
       - type: bind
         source: ./analyser
-        target: /fileharbor/analyser
+        target: /app/analyser
       - type: bind
         source: ./packages
-        target: /fileharbor/packages
+        target: /app/packages
       - type: bind
         source: ./backend
-        target: /fileharbor/backend
-      - type: bind
-        source: ./pyproject.toml
-        target: /fileharbor/pyproject.toml
-      - type: bind
-        source: ./.python-version
-        target: /fileharbor/.python-version
-    working_dir: /fileharbor/
+        target: /app/backend
+    working_dir: /app/
     environment:
       - HF_HOME=/models
-    command: uv run --package analyser analyser/src/analyser/server.py -v -c analyser/config.json
+    command: uv run --package analyser analyser/src/analyser/server.py -v -c analyser/config.toml
 
   postgres:
     image: postgres:17.5
     volumes:
       - ./data/db/:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=fileharbor
+      - POSTGRES_DB=app
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - PGDATA=/var/lib/postgresql/data/data/
@@ -73,9 +64,6 @@ services:
       - type: bind
         source: ./data/
         target: /data/
-      # - type: bind
-      #   source: ./data/backend_venv
-      #   target: /fileharbor/.venv
       - type: bind
         source: ./data/ray/
         target: /tmp/ray/
@@ -84,20 +72,20 @@ services:
         target: /models/
       - type: bind
         source: ./analyser
-        target: /fileharbor/analyser
+        target: /app/analyser
       - type: bind
         source: ./packages
-        target: /fileharbor/packages
+        target: /app/packages
       - type: bind
         source: ./backend
-        target: /fileharbor/backend
+        target: /app/backend
       - type: bind
         source: ./pyproject.toml
-        target: /fileharbor/pyproject.toml
+        target: /app/pyproject.toml
       - type: bind
         source: ./.python-version
-        target: /fileharbor/.python-version
-    working_dir: /fileharbor/
+        target: /app/.python-version
+    working_dir: /app/
     command: uv run --package backend python3 backend/src/backend/manage.py runserver 0.0.0.0:8000
     depends_on:
       - postgres
@@ -110,9 +98,6 @@ services:
         source: ./data/
         target: /data/
       - type: bind
-        source: ./data/celery_venv
-        target: /fileharbor/.venv
-      - type: bind
         source: ./data/ray/
         target: /tmp/ray/
       - type: bind
@@ -120,20 +105,14 @@ services:
         target: /models/
       - type: bind
         source: ./analyser
-        target: /fileharbor/analyser
+        target: /app/analyser
       - type: bind
         source: ./packages
-        target: /fileharbor/packages
+        target: /app/packages
       - type: bind
         source: ./backend
-        target: /fileharbor/backend
-      - type: bind
-        source: ./pyproject.toml
-        target: /fileharbor/pyproject.toml
-      - type: bind
-        source: ./.python-version
-        target: /fileharbor/.python-version
-    working_dir: /fileharbor/backend/src/backend/
+        target: /app/backend
+    working_dir: /app/backend/src/backend/
     environment:
       - GRPC_ENABLE_FORK_SUPPORT=1
       - GRPC_POLL_STRATEGY=poll
@@ -143,7 +122,7 @@ services:
       - memcached
 
   frontend:
-    image: fileharbor/frontend
+    image: app/frontend
     build:
       context: ./frontend
     ports:
@@ -151,8 +130,8 @@ services:
     volumes:
       - type: bind
         source: ./frontend/
-        target: /frontend
+        target: /app/frontend
       - type: bind
         source: ./data/
         target: /data
-    working_dir: /frontend
+    working_dir: /app/frontend

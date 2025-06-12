@@ -5,26 +5,68 @@ max_workers = 4
 port = 50051
 host = "0.0.0.0"
 
-[[search_index]]
-name = "default"
+[[inference]]
+name = "ray"
+type = "RayInferenceServer"
 
-[[search_index.plugin]]
-name = "clip_text"
-type = "ClipTextEmbeddingFeature"
-fields = ["meta/*"]
+[[compute_plugin]]
+name = "clip_classification_xlm-roberta-base-vit-b-32_laion5b_s13b_b90k"
+type = "ClipClassification"
+inference = "ray"
 
-[search_index.plugin.params]
-inference.requirements = ["torch", "open_clip_torch", "imageio", "transformers"]
-
-[[search_index.plugin]]
-name = "clip_image"
+[[compute_plugin]]
+name = "clip_image_xlm-roberta-base-vit-b-32_laion5b_s13b_b90k"
 type = "ClipImageEmbeddingFeature"
-fields = ["image"]
+inference = "ray"
 
-[search_index.plugin.params]
+[compute_plugin.params]
 inference.requirements = ["torch", "open_clip_torch", "imageio", "transformers"]
 multicrop = true
 max_dim = 0
 min_dim = 244
+embedding_size = 768
 model = "xlm-roberta-base-ViT-B-32"
 pretrained = "laion5b_s13b_b90k"
+
+[[compute_plugin]]
+name = "clip_text_xlm-roberta-base-vit-b-32_laion5b_s13b_b90k"
+type = "ClipTextEmbeddingFeature"
+inference = "ray"
+
+[compute_plugin.params]
+inference.requirements = ["torch", "open_clip_torch", "imageio", "transformers"]
+embedding_size = 768
+model = "xlm-roberta-base-ViT-B-32"
+pretrained = "laion5b_s13b_b90k"
+
+[[index]]
+name = "default2"
+
+[index.indexer_plugin]
+type = "QDrantIndexer"
+
+[index.indexer_plugin.params]
+host = "localhost"
+port = 6333
+grpc.port = 50151
+grpc.host = "localhost"
+
+[[index.indexing_plugin]]
+index_name = "clip_image"
+compute_plugin = "clip_image_xlm-roberta-base-vit-b-32_laion5b_s13b_b90k"
+fields = ["image"]
+
+[[index.indexing_plugin]]
+index_name = "clip_text"
+compute_plugin = "clip_text_xlm-roberta-base-vit-b-32_laion5b_s13b_b90k"
+fields = ["meta.*"]
+
+[[index.search_plugin]]
+index_name = "clip_image"
+compute_plugin = "clip_image_xlm-roberta-base-vit-b-32_laion5b_s13b_b90k"
+fields = ["image"]
+
+[[index.search_plugin]]
+index_name = "clip_text"
+compute_plugin = "clip_text_xlm-roberta-base-vit-b-32_laion5b_s13b_b90k"
+fields = ["text"]

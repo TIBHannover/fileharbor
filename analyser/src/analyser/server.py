@@ -1,10 +1,10 @@
-import re
 import copy
 import grpc
 import sys
 import time
 import json
 import uuid
+import tomllib
 
 import argparse
 import imageio.v3 as iio
@@ -15,338 +15,47 @@ from data import DataManager
 from interface import (
     analyser_pb2,
     analyser_pb2_grpc,
+    searcher_pb2,
+    searcher_pb2_grpc,
     collection_pb2,
     collection_pb2_grpc,
 )
 
-from inference import InferenceServerFactory
+from typing import Dict
 
 from concurrent import futures
-from google.protobuf.json_format import MessageToJson, MessageToDict, ParseDict
 
-from plugins import IndexerPluginManager, MappingPluginManager, ComputePluginManager
-from interface.utils import (
-    meta_from_proto,
-    meta_to_proto,
-    classifier_to_proto,
-    feature_to_proto,
-)
+from shared_object import SharedObject
+from plugins import IndexerFactory
+from interface.utils import meta_from_proto
 
 from jobs import IndexingJob, SearchJob
 
-from plugins.cache import Cache
-
-
-def init_plugins(config):
-    data_dict = {}
-
-    inference_server_config = config.get("inference_server", {})
-    inference_server = InferenceServerFactory.build(
-        inference_server_config["type"], config=inference_server_config["params"]
-    )
-    data_dict["inference_server"] = inference_server
-
-    compute_manager = ComputePluginManager(configs=config.get("compute_plugins", []))
-
-    data_dict["compute_manager"] = compute_manager
-
-    indexer_manager = IndexerPluginManager(configs=config.get("indexes", []))
-    indexer_manager.find()
-
-    data_dict["indexer_manager"] = indexer_manager
-
-    mapping_manager = MappingPluginManager(configs=config.get("mappings", []))
-    mapping_manager.find()
-
-    data_dict["mapping_manager"] = mapping_manager
-
-    cache = Cache(
-        cache_dir=config.get("cache", {"cache_dir": None})["cache_dir"], mode="r"
-    )
-
-    data_dict["cache"] = cache
-
-    data_config = config.get("data", None)
-    data_dir = None
-    if data_config is not None:
-        data_dir = data_config.get("data_dir", None)
-        cache_config = data_config.get("cache")
-        if cache_config is not None:
-            cache = CacheManager.build(
-                name=cache_config["type"], config=cache_config["params"]
-            )
-
-    data_manager = DataManager(data_dir=data_dir, cache=cache)
-    data_dict["data_manager"] = data_manager
-
-    return data_dict
-
-
-def init_process(config):
-    globals().update(init_plugins(config))
-
-
-class IndexerServicer(analyser_pb2_grpc.IndexerServicer):
-    def __init__(self, config):
-        self.config = config
-        self.managers = init_plugins(config)
-
-        self.indexing_process_pool = futures.ProcessPoolExecutor(
-            max_workers=8, initializer=IndexingJob().init_worker, initargs=(config,)
-        )
-        self.search_process_pool = futures.ProcessPoolExecutor(
-            max_workers=8, initializer=SearchJob().init_worker, initargs=(config,)
-        )
-        self.futures = []
-
-        self.max_results = config.get("indexer", {}).get("max_results", 100)
-
-    def analyse(self, request, context):
-        logging.info(f"Received analyse request, plugins: {request.plugin}")
-
-        results = self.managers["inference_server"](
-            self.managers["compute_manager"], request.plugin, request
-        )
-
-        # results = list(self.managers["compute_manager"].run([image], [plugins], plugins=plugins))
-        print(results, flush=True)
-
-        return results
-
-    def list_plugins(self, request, context):
-        reply = analyser_pb2.ListPluginsReply()
-
-        for plugin_name, plugin_class in (
-            self.managers["compute_manager"].plugins().items()
-        ):
-            pluginInfo = reply.plugins.add()
-            pluginInfo.name = plugin_name
-
-        return reply
-
-    def indexing(self, request_iterator, context):
-        logging.info(f"[Server] Indexing: start indexing")
-        job_id = uuid.uuid4().hex
-
-        with (
-            self.managers["data_manager"].create_data("ImagesData") as images_data,
-            self.managers["data_manager"].create_data("ListData") as list_data,
-        ):
-
-            for data_point in request_iterator:
-                # TODO check if key already exists
-                data_id = (
-                    data_point.image.id if data_point.image.id else uuid.uuid4().hex
-                )
-                meta = meta_from_proto(data_point.image.meta)
-                origin = meta_from_proto(data_point.image.origin)
-
-                collection = {}
-
-                if data_point.image.collection.id != "":
-                    collection["id"] = data_point.image.collection.id
-                    collection["name"] = data_point.image.collection.name
-                    collection["is_public"] = data_point.image.collection.is_public
-
-                index_data = {
-                    # "image_data": data_point.image.encoded,
-                    "meta": meta,
-                    "origin": origin,
-                    "collection": collection,
-                }
-                try:
-                    image = iio.imread(data_point.image.encoded)
-                except Exception as e:
-
-                    yield analyser_pb2.IndexingReply(
-                        status="error", id=data_id, indexing_job_id=job_id
-                    )
-                    logging.error(e)
-                    continue
-
-                yield analyser_pb2.IndexingReply(
-                    status="ok", id=data_id, indexing_job_id=job_id
-                )
-
-                with list_data.create_data("MetaData") as meta_data:
-                    meta_data.meta = index_data
-                    meta_data.ref_id = data_id
-
-                images_data.save_image(image, id=data_id)
-        logging.error(images_data.id)
-
-        #
-        variable = {
-            "future": None,
-            "id": job_id,
-            "object_id": images_data.id,
-            "meta_id": list_data.id,
-        }
-
-        indexing_job = IndexingJob()
-        indexing_job.init_worker(self.config)
-        indexing_job(copy.deepcopy(variable))
-
-        # future = self.indexing_process_pool.submit(
-        #     IndexingJob(), copy.deepcopy(variable)
-        # )
-        # variable["future"] = future
-        # self.futures.append(variable)
-
-    def status(self, request, context):
-        futures_lut = {x["id"]: i for i, x in enumerate(self.futures)}
-
-        if request.id in futures_lut:
-            job_data = self.futures[futures_lut[request.id]]
-            done = job_data["future"].done()
-
-            if not done:
-                return analyser_pb2.StatusReply(status="running")
-
-            result = job_data["future"].result()
-
-            if result is None:
-                return analyser_pb2.StatusReply(status="error")
-
-            return analyser_pb2.StatusReply(status="done", indexing=result)
-
-        return analyser_pb2.StatusReply(status="error")
-
-    # def get(self, request, context):
-    #     database = ElasticSearchDatabase(config=self.config.get("elasticsearch", {}))
-
-    #     entry = database.get_entry(request.id)
-
-    #     if entry is None:
-    #         context.set_code(grpc.StatusCode.NOT_FOUND)
-    #         context.set_details("Entry unknown")
-
-    #         return analyser_pb2.GetReply()
-
-    #     result = analyser_pb2.GetReply()
-    #     result.id = entry["id"]
-
-    #     if "meta" in entry:
-    #         meta_to_proto(result.meta, entry["meta"])
-    #     if "collection" in entry:
-    #         logging.info(entry["collection"])
-    #         result.collection.id = entry["collection"]["id"]
-    #         result.collection.name = entry["collection"]["name"]
-    #         result.collection.is_public = entry["collection"]["is_public"]
-    #     if "origin" in entry:
-    #         meta_to_proto(result.origin, entry["origin"])
-    #     if "classifier" in entry:
-    #         classifier_to_proto(result.classifier, entry["classifier"])
-    #     if "feature" in entry:
-    #         feature_to_proto(result.feature, entry["feature"])
-
-    #     return result
-
-    def search(self, request, context):
-        logging.info(f"[Server] Search")
-        job_id = uuid.uuid4().hex
-
-        jsonObj = MessageToDict(request)
-        logging.info(jsonObj)
-
-        job_id = uuid.uuid4().hex
-        variable = {
-            "config": self.config,
-            "future": None,
-            "id": job_id,
-            "request": jsonObj,
-        }
-
-        future = self.search_process_pool.submit(SearchJob(), copy.deepcopy(variable))
-        variable["future"] = future
-        self.futures.append(variable)
-
-        return analyser_pb2.SearchReply(id=job_id)
-
-    def list_search_result(self, request, context):
-        futures_lut = {x["id"]: i for i, x in enumerate(self.futures)}
-        logging.error(futures_lut)
-
-        if request.id in futures_lut:
-            job_data = self.futures[futures_lut[request.id]]
-            done = job_data["future"].done()
-
-            if not done:
-                context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
-                context.set_details("Still running")
-                return analyser_pb2.ListSearchResultReply()
-            try:
-                result = job_data["future"].result()
-                logging.error(result)
-                result = result
-                result = ParseDict(result, analyser_pb2.ListSearchResultReply())
-            except Exception as e:
-                logging.error(f"Indexer: {repr(e)}")
-                logging.error(traceback.format_exc())
-                result = None
-
-            if result is None:
-                context.set_code(grpc.StatusCode.INTERNAL)
-                context.set_details("Search error")
-                return analyser_pb2.ListSearchResultReply()
-
-            return result
-
-        context.set_code(grpc.StatusCode.NOT_FOUND)
-        context.set_details("Job unknown")
-
-        return analyser_pb2.ListSearchResultReply()
-
-
-class CollectionServicer(collection_pb2_grpc.CollectionServicer):
-    def __init__(self, config):
-        self.config = config
-        self.managers = init_plugins(config)
-        self.process_pool = futures.ProcessPoolExecutor(
-            max_workers=1, initializer=init_process, initargs=(config,)
-        )
-        self.indexing_process_pool = futures.ProcessPoolExecutor(
-            max_workers=8, initializer=IndexingJob().init_worker, initargs=(config,)
-        )
-        self.futures = []
-
-        self.max_results = config.get("indexer", {}).get("max_results", 100)
-
-    def add(self, request, context):
-        logging.info(f"Received analyse request, plugins: {request}")
-
-        self.managers["indexer_manager"].create_collection(
-            name=request.name,
-            indexes=[{"name": x.name, "size": x.size} for x in request.indexes],
-        )
-
-        return collection_pb2.CollectionAddResponse()
-
-    def delete(self, request, context):
-        logging.info(f"Received analyse request, plugins: {request}")
-
-        self.managers["indexer_manager"].delete_collection(
-            name=request.name,
-        )
-
-        return collection_pb2.CollectionDeleteResponse()
-
-    def list(self, request, context):
-        logging.info(f"Received analyse request, plugins: {request.plugin}")
-
-        return results
-
-    def query(self, request, context):
-        logging.info(f"Received analyse request, plugins: {request.plugin}")
-
-        return results
+from services import AnalyserServicer, CollectionServicer, SearcherServicer
+from inference import InferenceServerFactory, InferenceServerManager
+from plugins import ComputePluginFactory, ComputePluginManager
 
 
 class Server:
     def __init__(self, config):
         self.config = config
-        self.indexer_servicer = IndexerServicer(config)
-        self.collection_servicer = CollectionServicer(config)
+        inference_server_manager = InferenceServerManager(config)
+        compute_plugin_manager = ComputePluginManager(
+            config, inference_server_manager=inference_server_manager
+        )
+
+        indexes = self.check_and_init_indexes(compute_plugin_manager)
+
+        self.shared_object = SharedObject(
+            config,
+            inference_server_manager=inference_server_manager,
+            compute_plugin_manager=compute_plugin_manager,
+            indexes=indexes,
+        )
+
+        self.indexer_servicer = AnalyserServicer(config, self.shared_object)
+        self.collection_servicer = CollectionServicer(config, self.shared_object)
+        self.searcher_servicer = SearcherServicer(config, self.shared_object)
 
         self.server = grpc.server(
             futures.ThreadPoolExecutor(max_workers=10),
@@ -356,7 +65,12 @@ class Server:
             ],
         )
 
-        analyser_pb2_grpc.add_IndexerServicer_to_server(
+        searcher_pb2_grpc.add_SearcherServicer_to_server(
+            self.searcher_servicer,
+            self.server,
+        )
+
+        analyser_pb2_grpc.add_AnalyserServicer_to_server(
             self.indexer_servicer,
             self.server,
         )
@@ -370,19 +84,116 @@ class Server:
         port = grpc_config.get("port", 50051)
         self.server.add_insecure_port(f"[::]:{port}")
 
-        self.compute_manager = ComputePluginManager(
-            configs=config.get("compute_plugins", [])
+        logging.info("Start all inference servers")
+        inference_server_manager.start()
+
+    def init_indexes(
+        self,
+        indexer_plugin,
+        compute_plugin_manager: ComputePluginManager,
+        index,
+        # target_index_configuration,
+        # current_index_configuration=None,
+    ):
+
+        # check what the configuration wants
+        target_index_configuration = []
+        for indexing_plugin in index.get("indexing_plugin", []):
+            compute_plugin = compute_plugin_manager[
+                indexing_plugin.get("compute_plugin")
+            ]
+
+            target_index_configuration.append(
+                {
+                    "name": indexing_plugin.get("index_name"),
+                    "size": compute_plugin["compute_plugin"].embedding_size,
+                }
+            )
+
+        # check if the collection exists and what are the indexes
+        current_index_configuration = indexer_plugin.get_collection_indexes(
+            index.get("name")
         )
 
-        print(self.compute_manager.plugin_list, flush=True)
+        # there is nothing so we will create an index
+        if current_index_configuration is None:
+            logging.info(f'Create new collection "{index.get("name")}"')
+            indexer_plugin.create_collection(
+                name=index.get("name"),
+                indexes=target_index_configuration,
+            )
+            return
 
-        inference_server_config = config.get("inference_server", {})
-        self.inference_server = InferenceServerFactory.build(
-            inference_server_config["type"], config=inference_server_config["params"]
-        )
+        # check if the existing index is compatible with the target index from the config
+        current_index_configuration = {
+            x["name"]: x["size"] for x in current_index_configuration
+        }
+        match = True
+        for x in target_index_configuration:
+            if x["name"] in current_index_configuration:
+                if x["size"] != current_index_configuration[x["name"]]:
+                    logging.error(
+                        f'Size different between existing index and configuration for index "{x['name']}" ({x['size']} vs {current_index_configuration[x['name']]}).'
+                    )
+                    match = False
+
+            else:
+                logging.error(
+                    f'Target index "{x['name']}" didn\'t exists in current collection.'
+                )
+                match = False
+
+        if not match:
+            logging.error(
+                f'Target index "{x['name']}" is not compatible with the existing index'
+            )
+            # TODO fix
+            exit()
+
+    def check_and_init_indexes(self, compute_plugin_manager: ComputePluginManager):
+
+        indexer_plugin_factory = IndexerFactory()
+
+        # Build an dict with index name to indexer plugin and config
+        indexes = {}
+        for index in self.config.get("index", []):
+            index_name = index.get("name")
+            if index_name is None and not isinstance(index_name, str):
+                logging.error("Index has no name field or it is not a string.")
+                exit(-1)
+
+            indexer_plugin_config = index.get("indexer_plugin")
+            if indexer_plugin_config is None or not isinstance(
+                indexer_plugin_config, dict
+            ):
+                logging.error(
+                    f'Index "{index_name}" has no indexer_plugin field or it is not a dictionary.'
+                )
+                exit(-1)
+
+            indexer_plugin_type = indexer_plugin_config.get("type")
+            if indexer_plugin_type is None or not isinstance(indexer_plugin_type, str):
+                logging.error(
+                    f'Index "{index_name}" has no type field or it is not a dictionary.'
+                )
+                exit(-1)
+
+            indexer_plugin = indexer_plugin_factory.build(
+                indexer_plugin_type, config=indexer_plugin_config.get("params", {})
+            )
+
+            if index_name in indexes:
+                logging.error(
+                    f'There is more than one index with the name "{index_name}".'
+                )
+
+            self.init_indexes(indexer_plugin, compute_plugin_manager, index)
+
+            indexes[index_name] = {"indexer_plugin": indexer_plugin, "config": index}
+
+        return indexes
 
     def run(self):
-        self.inference_server.start(self.compute_manager)
         self.server.start()
         logging.info("[Server] Ready")
 
@@ -415,8 +226,8 @@ def parse_args():
 
 
 def read_config(path):
-    with open(path, "r") as f:
-        return json.load(f)
+    with open(path, "rb") as f:
+        return tomllib.load(f)
     return {}
 
 
@@ -424,8 +235,10 @@ def main():
     args = parse_args()
     level = logging.ERROR
     if args.debug:
+        print("LOGGING::DEBUG")
         level = logging.DEBUG
     elif args.verbose:
+        print("LOGGING::INFO")
         level = logging.INFO
 
     logging.basicConfig(

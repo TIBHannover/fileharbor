@@ -6,8 +6,8 @@ import numpy as np
 from typing import Dict
 
 
-from interface import analyser_pb2, data_pb2
-from analyser.plugins import ComputePlugin, ComputePluginManager, ComputePluginResult
+from interface import analyser_pb2, data_pb2, common_pb2
+from analyser.plugins import ComputePlugin, ComputePluginFactory, ComputePluginResult
 from analyser.utils import image_from_proto, image_resize, image_crop, image_pad
 
 
@@ -17,6 +17,7 @@ class ImagePreprozessorWrapper:
         self.mean = None or getattr(clip.visual, "image_mean", None)
         self.std = None or getattr(clip.visual, "image_std", None)
         self.image_size = clip.visual.image_size
+        print(self.image_size)
         self.transform = self.image_transform()
         self.format = format
 
@@ -102,7 +103,7 @@ default_parameters = {
 }
 
 
-@ComputePluginManager.export("ClipImageEmbeddingFeature")
+@ComputePluginFactory.export("ClipImageEmbeddingFeature")
 class ClipImageEmbeddingFeature(
     ComputePlugin, config=default_config, parameters=default_parameters, version="0.4"
 ):
@@ -113,23 +114,21 @@ class ClipImageEmbeddingFeature(
 
         self.model_name = self.config.get("model", "xlm-roberta-base-ViT-B-32")
         self.pretrained = self.config.get("pretrained", "laion5b_s13b_b90k")
+        self.embedding_size = self.config.get("embedding_size", 768)
         self.model = None
 
     def image_resize_crop(self, img, resize_size, crop_size):
         converted = image_resize(image_pad(img), size=crop_size)
         return converted
 
-    def call(self, analyse_request: analyser_pb2.AnalyseRequest):
-        from sklearn.preprocessing import normalize
-        import imageio.v3 as iio
-        import torch
-        import open_clip
-
-        inputs, parameters = self.map_analyser_request_to_dict(analyse_request)
-
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-
+    def init_model(self):
         if self.model is None:
+            from sklearn.preprocessing import normalize
+            import imageio.v3 as iio
+            import torch
+            import open_clip
+
+            device = "cuda" if torch.cuda.is_available() else "cpu"
             logging.info(f"Load on device {device}")
             model, _, preprocess = open_clip.create_model_and_transforms(
                 self.model_name,
@@ -140,6 +139,18 @@ class ClipImageEmbeddingFeature(
 
             self.model = model.visual
             self.preprocess = ImagePreprozessorWrapper(model, format=torch.float32)
+
+    def call(self, plugin_run: common_pb2.PluginRun):
+        from sklearn.preprocessing import normalize
+        import imageio.v3 as iio
+        import torch
+        import open_clip
+
+        inputs, parameters = self.map_analyser_request_to_dict(plugin_run)
+
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        self.init_model()
 
         result = analyser_pb2.AnalyseReply()
         for entry in inputs["image"]:
@@ -170,7 +181,7 @@ class ClipImageEmbeddingFeature(
             )
 
             result.results.append(
-                analyser_pb2.PluginResult(
+                common_pb2.PluginResult(
                     plugin=self.name,
                     type="",
                     version=self.version,

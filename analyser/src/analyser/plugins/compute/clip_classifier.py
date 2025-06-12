@@ -5,59 +5,50 @@ import numpy as np
 from typing import Dict
 
 
-from interface import analyser_pb2, data_pb2
-from analyser.plugins import ComputePlugin, ComputePluginManager
+from interface import analyser_pb2, data_pb2, common_pb2
+from analyser.plugins import ComputePlugin, ComputePluginFactory
 
 
 default_config = {
-    "multicrop": True,
-    "max_dim": None,
-    "min_dim": 224,
+    "clip_image_plugin": "clip_image_xlm-roberta-base-vit-b-32_laion5b_s13b_b90k",
+    "clip_text_plugin": "clip_text_xlm-roberta-base-vit-b-32_laion5b_s13b_b90k",
 }
 
-
-default_config = {
-    "multicrop": True,
-    "max_dim": None,
-    "min_dim": 224,
-}
 
 default_parameters = {"crop_size": [224, 224], "aggregation": "softmax"}
 
 
-@ComputePluginManager.export("ClipClassification")
+@ComputePluginFactory.export("ClipClassification")
 class ClipClassification(
     ComputePlugin, config=default_config, parameters=default_parameters, version="0.4"
 ):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.max_dim = self.config["max_dim"]
-        self.min_dim = self.config["min_dim"]
 
-    def call(self, analyse_request: analyser_pb2.AnalyseRequest):
+    def call(self, plugin_run: common_pb2.PluginRun):
         import torch
         from sklearn.metrics.pairwise import cosine_similarity
 
-        inputs, parameters = self.map_analyser_request_to_dict(analyse_request)
+        inputs, parameters = self.map_analyser_request_to_dict(plugin_run)
 
         image_embedding_request = self.map_dict_to_analyser_request(
             {"image": inputs["image"]}, parameters
         )
 
-        image_embedding_result = self.inference_server(
+        image_embedding_result = self.inference_server_manager(
             self.compute_plugin_manager,
-            "ClipImageEmbeddingFeature",
-            image_embedding_request,
+            self.config.get("clip_image_plugin"),
+            request=image_embedding_request,
         )
 
         text_embedding_request = self.map_dict_to_analyser_request(
             {"text": inputs["text"]}, parameters
         )
 
-        text_embedding_result = self.inference_server(
+        text_embedding_result = self.inference_server_manager(
             self.compute_plugin_manager,
-            "ClipTextEmbeddingFeature",
-            text_embedding_request,
+            self.config.get("clip_text_plugin"),
+            request=text_embedding_request,
         )
 
         text_embeddings = []
@@ -106,7 +97,7 @@ class ClipClassification(
             )
 
             result.results.append(
-                analyser_pb2.PluginResult(
+                common_pb2.PluginResult(
                     plugin=self.name,
                     type="",
                     version="",

@@ -1,7 +1,7 @@
 import numpy as np
 import uuid
-from interface import analyser_pb2, data_pb2
-from analyser.plugins import ComputePlugin, ComputePluginManager, ComputePluginResult
+from interface import analyser_pb2, data_pb2, common_pb2
+from analyser.plugins import ComputePlugin, ComputePluginFactory, ComputePluginResult
 from analyser.utils import image_from_proto, image_resize, image_crop
 
 
@@ -16,7 +16,7 @@ default_config = {}
 default_parameters = {}
 
 
-@ComputePluginManager.export("ClipTextEmbeddingFeature")
+@ComputePluginFactory.export("ClipTextEmbeddingFeature")
 class ClipTextEmbeddingFeature(
     ComputePlugin, config=default_config, parameters=default_parameters, version="0.4"
 ):
@@ -24,15 +24,16 @@ class ClipTextEmbeddingFeature(
         super().__init__(**kwargs)
         self.model_name = self.config.get("model", "xlm-roberta-base-ViT-B-32")
         self.pretrained = self.config.get("pretrained", "laion5b_s13b_b90k")
+        self.embedding_size = self.config.get("embedding_size", 768)
         self.model = None
 
-    def call(self, analyse_request: analyser_pb2.AnalyseRequest):
+    def call(self, plugin_run: common_pb2.PluginRun):
         from sklearn.preprocessing import normalize
         import imageio.v3 as iio
         import torch
         import open_clip
 
-        inputs, parameters = self.map_analyser_request_to_dict(analyse_request)
+        inputs, parameters = self.map_analyser_request_to_dict(plugin_run)
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -65,7 +66,7 @@ class ClipTextEmbeddingFeature(
             )
 
             result.results.append(
-                analyser_pb2.PluginResult(
+                common_pb2.PluginResult(
                     plugin=self.name,
                     type="",
                     version=self.version,

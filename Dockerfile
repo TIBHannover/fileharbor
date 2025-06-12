@@ -7,15 +7,22 @@ WORKDIR /app
 # Copy from the cache instead of linking since it's a mounted volume
 ENV UV_LINK_MODE=copy
 
+
+COPY uv.lock /app/uv.lock
+COPY .python-version /app/.python-version
+COPY pyproject.toml /app/pyproject.toml
+COPY packages/data/pyproject.toml /app/packages/data/pyproject.toml
+COPY packages/interface/pyproject.toml /app/packages/interface/pyproject.toml
+COPY backend/pyproject.toml /app/backend/pyproject.toml
+COPY analyser/pyproject.toml /app/analyser/pyproject.toml
+
 # Install dependencies
-# RUN --mount=type=cache,target=/root/.cache/uv \
-#     --mount=type=bind,source=uv.lock,target=uv.lock \
-#     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-#     uv sync --locked --no-install-project --no-dev
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-install-project --no-dev
 
 # Then, add the rest of the project source code and install it
 # Installing separately from its dependencies allows optimal layer caching
-COPY . /app
+# COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked 
 
