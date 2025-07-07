@@ -23,7 +23,7 @@ from . import common_pb2 as common__pb2
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n\x0e\x61nalyser.proto\x12\x0ciart.indexer\x1a\ndata.proto\x1a\x0c\x63ommon.proto"V\n\nPluginInfo\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12,\n\x08settings\x18\x03 \x03(\x0b\x32\x1a.iart.indexer.PluginConfig"\x14\n\x12ListPluginsRequest"B\n\x10ListPluginsReply\x12.\n\x0cplugin_infos\x18\x01 \x03(\x0b\x32\x18.iart.indexer.PluginInfo"=\n\x0e\x41nalyseRequest\x12+\n\nplugin_run\x18\x01 \x01(\x0b\x32\x17.iart.indexer.PluginRun";\n\x0c\x41nalyseReply\x12+\n\x07results\x18\x01 \x03(\x0b\x32\x1a.iart.indexer.PluginResult2\xa5\x01\n\x08\x41nalyser\x12R\n\x0clist_plugins\x12 .iart.indexer.ListPluginsRequest\x1a\x1e.iart.indexer.ListPluginsReply"\x00\x12\x45\n\x07\x61nalyse\x12\x1c.iart.indexer.AnalyseRequest\x1a\x1a.iart.indexer.AnalyseReply"\x00\x62\x06proto3'
+    b'\n\x0e\x61nalyser.proto\x12\nfileharbor\x1a\ndata.proto\x1a\x0c\x63ommon.proto"T\n\nPluginInfo\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12*\n\x08settings\x18\x03 \x03(\x0b\x32\x18.fileharbor.PluginConfig"\x14\n\x12ListPluginsRequest"@\n\x10ListPluginsReply\x12,\n\x0cplugin_infos\x18\x01 \x03(\x0b\x32\x16.fileharbor.PluginInfo";\n\x0e\x41nalyseRequest\x12)\n\nplugin_run\x18\x01 \x01(\x0b\x32\x15.fileharbor.PluginRun"9\n\x0c\x41nalyseReply\x12)\n\x07results\x18\x01 \x03(\x0b\x32\x18.fileharbor.PluginResult2\x9d\x01\n\x08\x41nalyser\x12N\n\x0clist_plugins\x12\x1e.fileharbor.ListPluginsRequest\x1a\x1c.fileharbor.ListPluginsReply"\x00\x12\x41\n\x07\x61nalyse\x12\x1a.fileharbor.AnalyseRequest\x1a\x18.fileharbor.AnalyseReply"\x00\x62\x06proto3'
 )
 
 _globals = globals()
@@ -31,16 +31,16 @@ _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "analyser_pb2", _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
     DESCRIPTOR._loaded_options = None
-    _globals["_PLUGININFO"]._serialized_start = 58
-    _globals["_PLUGININFO"]._serialized_end = 144
-    _globals["_LISTPLUGINSREQUEST"]._serialized_start = 146
-    _globals["_LISTPLUGINSREQUEST"]._serialized_end = 166
-    _globals["_LISTPLUGINSREPLY"]._serialized_start = 168
-    _globals["_LISTPLUGINSREPLY"]._serialized_end = 234
-    _globals["_ANALYSEREQUEST"]._serialized_start = 236
-    _globals["_ANALYSEREQUEST"]._serialized_end = 297
-    _globals["_ANALYSEREPLY"]._serialized_start = 299
-    _globals["_ANALYSEREPLY"]._serialized_end = 358
-    _globals["_ANALYSER"]._serialized_start = 361
-    _globals["_ANALYSER"]._serialized_end = 526
+    _globals["_PLUGININFO"]._serialized_start = 56
+    _globals["_PLUGININFO"]._serialized_end = 140
+    _globals["_LISTPLUGINSREQUEST"]._serialized_start = 142
+    _globals["_LISTPLUGINSREQUEST"]._serialized_end = 162
+    _globals["_LISTPLUGINSREPLY"]._serialized_start = 164
+    _globals["_LISTPLUGINSREPLY"]._serialized_end = 228
+    _globals["_ANALYSEREQUEST"]._serialized_start = 230
+    _globals["_ANALYSEREQUEST"]._serialized_end = 289
+    _globals["_ANALYSEREPLY"]._serialized_start = 291
+    _globals["_ANALYSEREPLY"]._serialized_end = 348
+    _globals["_ANALYSER"]._serialized_start = 351
+    _globals["_ANALYSER"]._serialized_end = 508
 # @@protoc_insertion_point(module_scope)

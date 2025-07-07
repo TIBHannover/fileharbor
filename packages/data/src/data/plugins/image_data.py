@@ -14,12 +14,57 @@ from ..data import Data
 from interface import data_pb2
 
 
+@DataManager.export("ImageData", data_pb2.IMAGE_DATA)
 @dataclass(kw_only=True)
 class ImageData(Data):
     type: str = field(default="ImageData")
     time: float = None
     delta_time: float = field(default=None)
     ext: str = field(default="jpg")
+
+    def load(self) -> None:
+        super().load()
+        assert self.check_fs(), "No filesystem handler installed"
+
+        data = self.load_dict("image_data.yml")
+        self.time = data.get("time")
+        self.delta_time = data.get("delta_time")
+        self.ext = data.get("ext")
+
+    def save(self) -> None:
+        super().save()
+        assert self.check_fs(), "No filesystem handler installed"
+        assert self.fs.mode == "w", "Data packet is open read only"
+
+        self.save_dict(
+            "image_data.yml",
+            {
+                "time": self.time,
+                "delta_time": self.delta_time,
+                "ext": self.ext,
+            },
+        )
+
+    def save_image(self, image: npt.ArrayLike, **kwargs) -> None:
+        assert self.check_fs(), "No filesystem handler installed"
+        assert self.fs.mode == "w", "Data packet is open read only"
+        try:
+            encoded = iio.imwrite("<bytes>", image, extension=f".{self.ext}")
+            with self.fs.open_file(f"image.{self.ext}", "w") as f:
+                f.write(encoded)
+        except:
+            logging.error("[ImagesData] Could not add a new image")
+            return None
+
+    def load_image(self) -> npt.ArrayLike:
+        assert self.check_fs(), "No filesystem handler installed"
+
+        try:
+            with self.fs.open_file(f"image.{self.ext}", "r") as f:
+                return iio.imread(f.read(), extension=f".{self.ext}")
+        except Exception as e:
+            logging.error(f"[ImagesData] Could not load image data (Exception: {e})")
+            return None
 
     def to_dict(self) -> dict:
         return {
@@ -28,6 +73,12 @@ class ImageData(Data):
             "delta_time": self.delta_time,
             "ext": self.ext,
         }
+
+    def to_proto(self) -> data_pb2.Data:
+        with self.fs.open_file(f"image.{self.ext}", "r") as f:
+            return data_pb2.Data(
+                id=self.id, image=data_pb2.ImageData(content=f.read(), ext=self.ext)
+            )
 
 
 @DataManager.export("ImagesData", data_pb2.IMAGES_DATA)

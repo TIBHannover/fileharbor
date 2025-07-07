@@ -23,7 +23,7 @@ class ClipTextEmbeddingFeature(
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.model_name = self.config.get("model", "xlm-roberta-base-ViT-B-32")
-        self.pretrained = self.config.get("pretrained", "laion5b_s13b_b90k")
+        self.pretrained = self.config.get("pretrained")
         self.embedding_size = self.config.get("embedding_size", 768)
         self.model = None
 
@@ -37,9 +37,7 @@ class ClipTextEmbeddingFeature(
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        logging.info(f"DEVICE {device}")
         if self.model is None:
-            logging.info(f"LOAD {device}")
             model, _, preprocess = open_clip.create_model_and_transforms(
                 self.model_name,
                 pretrained=self.pretrained,
@@ -48,7 +46,6 @@ class ClipTextEmbeddingFeature(
             )
             self.tokenizer = open_clip.get_tokenizer(self.model_name)
             self.model = model
-        # text = self.preprocess(parameters["search_term"])
 
         result = analyser_pb2.AnalyseReply()
         for entry in inputs["text"]:
@@ -57,7 +54,7 @@ class ClipTextEmbeddingFeature(
                 output = self.model.encode_text(text.to(device)).float()
             output = output / np.linalg.norm(np.asarray(output))
             output = output.flatten()
-            data = data_pb2.PluginData(
+            data = data_pb2.Data(
                 id=uuid.uuid4().hex,
                 name="clip_embedding",
                 feature=data_pb2.Feature(
@@ -67,8 +64,8 @@ class ClipTextEmbeddingFeature(
 
             result.results.append(
                 common_pb2.PluginResult(
-                    plugin=self.name,
-                    type="",
+                    plugin=self.instance_name,
+                    type=self.name,
                     version=self.version,
                     result=data,
                 )

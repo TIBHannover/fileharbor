@@ -80,16 +80,13 @@ class QDrantIndexer(IndexerPlugin):
                     always_ram=True,
                 ),
             ),
-            # optimizers_config=models.OptimizersConfigDiff(
-            #     indexing_threshold=1000000000,
-            # ),
         )
 
-    def delete_collection(self, name):
+    def delete_collection(self, collection_name):
         # TODO add lock here
         logging.info(f"[QDrantIndexer]: delete_collection")
 
-        self.client.delete_collection(collection_name=name)
+        return self.client.delete_collection(collection_name=collection_name)
 
     def add_points(self, collection_name, points: List[Dict]):
         # TODO add lock here
@@ -169,9 +166,3 @@ class QDrantIndexer(IndexerPlugin):
         results = sorted(results, key=lambda x: -x["score"])
 
         return results
-
-    def delete(self, collections):
-        for collection_id in collections:
-            self.client.delete_collection(
-                collection_name=collection_id + "_342ffe349e8f4addb0c2b49ffe467f27"
-            )

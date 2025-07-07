@@ -11,6 +11,8 @@ import logging
 import imageio
 import functools
 
+from typing import Dict
+
 import multiprocessing as mp
 
 from tqdm import tqdm
@@ -311,6 +313,7 @@ class Client:
         download: bool = True,
         resolutions=[{"min_dim": 200, "suffix": "_m"}, {"suffix": ""}],
         generate_url_id: bool = False,
+        parameters: Dict = None,
     ):
         if not isinstance(paths, (list, set)):
             ext = os.path.splitext(paths)[1]
@@ -326,7 +329,6 @@ class Client:
         else:
             entries = list_images(paths)
 
-        print(len(entries))
         if generate_url_id:
             entries = map(
                 lambda x: {
@@ -340,10 +342,6 @@ class Client:
             )
 
         entries = list(entries)
-        # for x in entries[:2]:
-        #     print(x)
-
-        # exit()
 
         if download:
             entries_to_download = [
@@ -371,69 +369,82 @@ class Client:
                 if blacklist is not None and entry["id"] in blacklist:
                     continue
 
-                request = analyser_pb2.IndexingRequest()
-                request_image = request.image
-                request_image.id = entry["id"]
+                request = collection_pb2.AddPointsRequest()
+                request.collection_name = parameters.get("collection_name")
 
                 for k, v in entry["meta"].items():
                     if isinstance(v, (list, set)):
                         for v_1 in v:
-                            meta_field = request_image.meta.add()
-                            meta_field.key = k
+
+                            data_entry = request.data.add()
+                            data_entry.name = f"meta/{k}"
 
                             if isinstance(v_1, int):
-                                meta_field.int_val = v_1
+                                data_entry.int.value = v_1
                             if isinstance(v_1, float):
-                                meta_field.float_val = v_1
+                                data_entry.float.value = v_1
                             if isinstance(v_1, str):
-                                meta_field.string_val = v_1
+                                data_entry.text.text = v_1
                     else:
-                        meta_field = request_image.meta.add()
-                        meta_field.key = k
+                        data_entry = request.data.add()
+                        data_entry.name = f"meta/{k}"
 
                         if isinstance(v, int):
-                            meta_field.int_val = v
+                            data_entry.int.value = v
                         if isinstance(v, float):
-                            meta_field.float_val = v
+                            data_entry.float.value = v
                         if isinstance(v, str):
-                            meta_field.string_val = v
+                            data_entry.text.text = v
 
                 if "origin" in entry:
                     for k, v in entry["origin"].items():
                         if isinstance(v, (list, set)):
                             for v_1 in v:
-                                origin_field = request_image.origin.add()
-                                origin_field.key = k
+                                data_entry = request.data.add()
+                                data_entry.name = f"source/{k}"
 
                                 if isinstance(v_1, int):
-                                    origin_field.int_val = v_1
+                                    data_entry.int.value = v_1
                                 if isinstance(v_1, float):
-                                    origin_field.float_val = v_1
+                                    data_entry.float.value = v_1
                                 if isinstance(v_1, str):
-                                    origin_field.string_val = v_1
+                                    data_entry.text.text = v_1
                         else:
-                            origin_field = request_image.origin.add()
-                            origin_field.key = k
+                            data_entry = request.data.add()
+                            data_entry.name = f"source/{k}"
 
                             if isinstance(v, int):
-                                origin_field.int_val = v
+                                data_entry.int.value = v
                             if isinstance(v, float):
-                                origin_field.float_val = v
+                                data_entry.float.value = v
                             if isinstance(v, str):
-                                origin_field.string_val = v
+                                data_entry.text.text = v
 
                 if "collection" in entry:
-                    collection = request_image.collection
 
                     if "id" in entry["collection"]:
-                        collection.id = entry["collection"]["id"]
+                        data_entry = request.data.add()
+                        data_entry.name = "collection/id"
+                        data_entry.text.text = entry["collection"]["id"]
+
                     if "name" in entry["collection"]:
-                        collection.name = entry["collection"]["name"]
+                        data_entry = request.data.add()
+                        data_entry.name = "collection/name"
+                        data_entry.text.text = entry["collection"]["name"]
+
                     if "is_public" in entry["collection"]:
-                        collection.is_public = entry["collection"]["is_public"]
+                        data_entry = request.data.add()
+                        data_entry.name = "collection/is_public"
+                        data_entry.bool.value = entry["collection"]["is_public"]
 
-                request_image.encoded = open(entry["path"], "rb").read()
+                request_image = request.data.add()
+                request_image.image.content = open(entry["path"], "rb").read()
 
+                # TODO
+                request_image.image.ext = "jpg"
+                request_image.name = "image"
+
+                request.id = entry["id"]
                 yield request
 
         channel = grpc.insecure_channel(
@@ -444,7 +455,7 @@ class Client:
                 ("grpc.keepalive_time_ms", 2**31 - 1),
             ],
         )
-        stub = analyser_pb2_grpc.AnalyserStub(channel)
+        stub = collection_pb2_grpc.CollectionStub(channel)
 
         time_start = time.time()
         blacklist = set()
@@ -456,7 +467,7 @@ class Client:
                 try:
                     gen_iter = entry_generator(entries, blacklist)
 
-                    for i, entry in enumerate(stub.indexing(gen_iter)):
+                    for i, entry in enumerate(stub.add_points(gen_iter)):
                         blacklist.add(entry.id)
                         pbar.update()
                         count += 1
@@ -657,6 +668,22 @@ class Client:
 
         return response
 
+    def list_collection(self):
+        channel = grpc.insecure_channel(
+            f"{self.host}:{self.port}",
+            options=[
+                ("grpc.max_send_message_length", 50 * 1024 * 1024),
+                ("grpc.max_receive_message_length", 50 * 1024 * 1024),
+            ],
+        )
+
+        stub = collection_pb2_grpc.CollectionStub(channel)
+        request = collection_pb2.CollectionListRequest()
+
+        response = stub.list(request)
+
+        return response
+
     def delete_collection(self, parameters):
         channel = grpc.insecure_channel(
             f"{self.host}:{self.port}",
@@ -713,6 +740,7 @@ def parse_args():
             "load",
             "dump",
             "create-collection",
+            "list-collection",
             "delete-collection",
         ],
         help="verbose output",
@@ -794,8 +822,9 @@ def main():
 
         client.indexing(
             paths=args.path,
-            image_paths=args.image_paths,  # , collection=args.collection,
+            image_paths=args.image_paths,
             generate_url_id=args.generate_url_id,
+            parameters=json.loads(args.parameters),
         )
 
     elif args.task == "get":
@@ -839,13 +868,12 @@ def main():
             )
         )
     elif args.task == "create-collection":
-        client.create_collection(
-            json.loads(args.parameters),
-        )
+        client.create_collection(json.loads(args.parameters))
+    elif args.task == "list-collection":
+        print(client.list_collection())
+
     elif args.task == "delete-collection":
-        client.delete_collection(
-            json.loads(args.parameters),
-        )
+        client.delete_collection(json.loads(args.parameters))
 
     return 0
 

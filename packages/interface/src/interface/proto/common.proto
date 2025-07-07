@@ -1,14 +1,8 @@
 syntax = "proto3";
 
-package iart.indexer;
+package fileharbor;
 
 import "data.proto";
-
-message Collection {
-  string id = 1;
-  string name = 2;
-  bool is_public = 3;
-}
 
 message RoI {
   float x = 1;
@@ -27,19 +21,6 @@ message ValueField {
   }
 }
 
-message Image {
-  string id = 1;
-  oneof image {
-    string path = 2;
-    bytes encoded = 3;
-  }
-  RoI roi = 4;
-  repeated ValueField meta = 5;
-  repeated ValueField origin = 6;
-
-  Collection collection = 7;
-}
-
 message PluginConfig {
   string name = 1;
   string default = 2;
@@ -51,7 +32,7 @@ message PluginResult {
   string plugin = 1;
   string type = 2;
   string version = 3;
-  PluginData result = 4;
+  Data result = 4;
 }
 
 enum DataType {
@@ -75,5 +56,5 @@ message PluginParameter {
 message PluginRun {
   string plugin = 1;
   repeated PluginParameter parameters = 2;
-  repeated PluginData inputs = 3;
+  repeated Data inputs = 3;
 }

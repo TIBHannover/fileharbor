@@ -3,6 +3,10 @@
 # from .video_data import VideoData
 from .image_data import ImageData, ImagesData
 from .meta_data import MetaData
+from .bool_data import BoolData
+from .float_data import FloatData
+from .int_data import IntData
+from .text_data import TextData
 
 # from .hist_data import HistData
 # from .rgb_data import RGBData

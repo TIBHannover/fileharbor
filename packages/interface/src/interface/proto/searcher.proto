@@ -6,7 +6,7 @@ option java_multiple_files = true;
 // ../web/tunnel.proto python -m grpc_tools.protoc -I../backend --python_out=.
 // --grpc_python_out=. ../backend/tunnel.proto create json stringds
 
-package iart.indexer;
+package fileharbor;
 
 import "data.proto";
 import "common.proto";
@@ -77,7 +77,7 @@ message PluginVectorSearchTerm {
 }
 
 message VectorSearchTerm {
-  repeated PluginData inputs = 1;
+  repeated Data inputs = 1;
   repeated PluginVectorSearchIndex vector_indexes = 4;
 
   enum Flag {
@@ -158,7 +158,6 @@ message SearchResultEntry {
   repeated float coordinates = 6;
   int64 cluster = 7;
   float distance = 8;
-  Collection collection = 9;
   bool padded = 10;
 }
 

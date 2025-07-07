@@ -37,22 +37,28 @@ class CollectionStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.add = channel.unary_unary(
-            "/fileharbor.Collection/add",
-            request_serializer=collection__pb2.CollectionAddRequest.SerializeToString,
-            response_deserializer=collection__pb2.CollectionAddResponse.FromString,
+        self.create = channel.unary_unary(
+            "/fileharbor.Collection/create",
+            request_serializer=collection__pb2.CreateRequest.SerializeToString,
+            response_deserializer=collection__pb2.CreateResponse.FromString,
             _registered_method=True,
         )
         self.delete = channel.unary_unary(
             "/fileharbor.Collection/delete",
-            request_serializer=collection__pb2.CollectionDeleteRequest.SerializeToString,
-            response_deserializer=collection__pb2.CollectionDeleteResponse.FromString,
+            request_serializer=collection__pb2.DeleteRequest.SerializeToString,
+            response_deserializer=collection__pb2.DeleteResponse.FromString,
             _registered_method=True,
         )
         self.list = channel.unary_unary(
             "/fileharbor.Collection/list",
-            request_serializer=collection__pb2.CollectionListRequest.SerializeToString,
-            response_deserializer=collection__pb2.CollectionListResponse.FromString,
+            request_serializer=collection__pb2.ListRequest.SerializeToString,
+            response_deserializer=collection__pb2.ListResponse.FromString,
+            _registered_method=True,
+        )
+        self.add_points = channel.stream_stream(
+            "/fileharbor.Collection/add_points",
+            request_serializer=collection__pb2.AddPointsRequest.SerializeToString,
+            response_deserializer=collection__pb2.AddPointsReply.FromString,
             _registered_method=True,
         )
         self.query = channel.unary_unary(
@@ -66,7 +72,7 @@ class CollectionStub(object):
 class CollectionServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def add(self, request, context):
+    def create(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
@@ -84,6 +90,12 @@ class CollectionServicer(object):
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
+    def add_points(self, request_iterator, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
+
     def query(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -93,20 +105,25 @@ class CollectionServicer(object):
 
 def add_CollectionServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "add": grpc.unary_unary_rpc_method_handler(
-            servicer.add,
-            request_deserializer=collection__pb2.CollectionAddRequest.FromString,
-            response_serializer=collection__pb2.CollectionAddResponse.SerializeToString,
+        "create": grpc.unary_unary_rpc_method_handler(
+            servicer.create,
+            request_deserializer=collection__pb2.CreateRequest.FromString,
+            response_serializer=collection__pb2.CreateResponse.SerializeToString,
         ),
         "delete": grpc.unary_unary_rpc_method_handler(
             servicer.delete,
-            request_deserializer=collection__pb2.CollectionDeleteRequest.FromString,
-            response_serializer=collection__pb2.CollectionDeleteResponse.SerializeToString,
+            request_deserializer=collection__pb2.DeleteRequest.FromString,
+            response_serializer=collection__pb2.DeleteResponse.SerializeToString,
         ),
         "list": grpc.unary_unary_rpc_method_handler(
             servicer.list,
-            request_deserializer=collection__pb2.CollectionListRequest.FromString,
-            response_serializer=collection__pb2.CollectionListResponse.SerializeToString,
+            request_deserializer=collection__pb2.ListRequest.FromString,
+            response_serializer=collection__pb2.ListResponse.SerializeToString,
+        ),
+        "add_points": grpc.stream_stream_rpc_method_handler(
+            servicer.add_points,
+            request_deserializer=collection__pb2.AddPointsRequest.FromString,
+            response_serializer=collection__pb2.AddPointsReply.SerializeToString,
         ),
         "query": grpc.unary_unary_rpc_method_handler(
             servicer.query,
@@ -126,7 +143,7 @@ class Collection(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def add(
+    def create(
         request,
         target,
         options=(),
@@ -141,9 +158,9 @@ class Collection(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/fileharbor.Collection/add",
-            collection__pb2.CollectionAddRequest.SerializeToString,
-            collection__pb2.CollectionAddResponse.FromString,
+            "/fileharbor.Collection/create",
+            collection__pb2.CreateRequest.SerializeToString,
+            collection__pb2.CreateResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -172,8 +189,8 @@ class Collection(object):
             request,
             target,
             "/fileharbor.Collection/delete",
-            collection__pb2.CollectionDeleteRequest.SerializeToString,
-            collection__pb2.CollectionDeleteResponse.FromString,
+            collection__pb2.DeleteRequest.SerializeToString,
+            collection__pb2.DeleteResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -202,8 +219,38 @@ class Collection(object):
             request,
             target,
             "/fileharbor.Collection/list",
-            collection__pb2.CollectionListRequest.SerializeToString,
-            collection__pb2.CollectionListResponse.FromString,
+            collection__pb2.ListRequest.SerializeToString,
+            collection__pb2.ListResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True,
+        )
+
+    @staticmethod
+    def add_points(
+        request_iterator,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.stream_stream(
+            request_iterator,
+            target,
+            "/fileharbor.Collection/add_points",
+            collection__pb2.AddPointsRequest.SerializeToString,
+            collection__pb2.AddPointsReply.FromString,
             options,
             channel_credentials,
             insecure,

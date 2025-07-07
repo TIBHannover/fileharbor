@@ -90,7 +90,7 @@ class ClipClassification(
                     )
                 )
 
-            data = data_pb2.PluginData(
+            data = data_pb2.Data(
                 id=uuid.uuid4().hex,
                 name="clip_embedding",
                 classifier=data_pb2.ClassifierResult(concepts=concepts),
@@ -98,9 +98,9 @@ class ClipClassification(
 
             result.results.append(
                 common_pb2.PluginResult(
-                    plugin=self.name,
-                    type="",
-                    version="",
+                    plugin=self.instance_name,
+                    type=self.name,
+                    version=self.version,
                     result=data,
                 )
             )

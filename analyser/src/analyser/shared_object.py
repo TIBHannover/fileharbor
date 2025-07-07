@@ -11,10 +11,12 @@ class SharedObject:
         config,
         inference_server_manager,
         compute_plugin_manager,
-        indexes,
+        indexer_plugin_manager,
+        data_manager,
     ):
         self.inference_server_manager = inference_server_manager
         self.compute_plugin_manager = compute_plugin_manager
-        self.indexes = indexes
+        self.indexer_plugin_manager = indexer_plugin_manager
+        self.data_manager = data_manager
 
         self.config = config

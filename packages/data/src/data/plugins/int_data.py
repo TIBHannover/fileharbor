@@ -7,21 +7,21 @@ import numpy as np
 
 from ..manager import DataManager
 from ..data import Data
-from analyser.proto import analyser_pb2
+from interface import data_pb2
 
 
-@DataManager.export("StringData", analyser_pb2.STRING_DATA)
+@DataManager.export("IntData", data_pb2.INT_DATA)
 @dataclass(kw_only=True)
-class StringData(Data):
-    type: str = field(default="StringData")
-    text: str = None
+class IntData(Data):
+    type: str = field(default="IntData")
+    value: int = None
 
     def load(self) -> None:
         super().load()
         assert self.check_fs(), "No filesystem handler installed"
 
-        data = self.load_dict("string_data.yml")
-        self.text = data.get("text")
+        data = self.load_dict("int_data.yml")
+        self.value = data.get("value")
 
     def save(self) -> None:
         super().save()
@@ -29,11 +29,20 @@ class StringData(Data):
         assert self.fs.mode == "w", "Data packet is open read only"
 
         self.save_dict(
-            "string_data.yml",
+            "int_data.yml",
             {
-                "text": self.text,
+                "value": self.value,
             },
         )
 
     def to_dict(self) -> dict:
-        return {"text": self.text}
+        return {"value": self.value}
+
+    def to_proto(self) -> data_pb2.Data:
+        return data_pb2.Data(id=self.id, int=data_pb2.IntData(value=self.value))
+
+    def to_scalar(self) -> int:
+        return self.value
+
+    def to_string(self) -> str:
+        return str(self.value)

@@ -38,13 +38,13 @@ class SearcherStub(object):
             channel: A grpc.Channel.
         """
         self.search = channel.unary_unary(
-            "/iart.indexer.Searcher/search",
+            "/fileharbor.Searcher/search",
             request_serializer=searcher__pb2.SearchRequest.SerializeToString,
             response_deserializer=searcher__pb2.SearchReply.FromString,
             _registered_method=True,
         )
         self.list_search_result = channel.unary_unary(
-            "/iart.indexer.Searcher/list_search_result",
+            "/fileharbor.Searcher/list_search_result",
             request_serializer=searcher__pb2.ListSearchResultRequest.SerializeToString,
             response_deserializer=searcher__pb2.ListSearchResultReply.FromString,
             _registered_method=True,
@@ -81,10 +81,10 @@ def add_SearcherServicer_to_server(servicer, server):
         ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-        "iart.indexer.Searcher", rpc_method_handlers
+        "fileharbor.Searcher", rpc_method_handlers
     )
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers("iart.indexer.Searcher", rpc_method_handlers)
+    server.add_registered_method_handlers("fileharbor.Searcher", rpc_method_handlers)
 
 
 # This class is part of an EXPERIMENTAL API.
@@ -107,7 +107,7 @@ class Searcher(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/iart.indexer.Searcher/search",
+            "/fileharbor.Searcher/search",
             searcher__pb2.SearchRequest.SerializeToString,
             searcher__pb2.SearchReply.FromString,
             options,
@@ -137,7 +137,7 @@ class Searcher(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/iart.indexer.Searcher/list_search_result",
+            "/fileharbor.Searcher/list_search_result",
             searcher__pb2.ListSearchResultRequest.SerializeToString,
             searcher__pb2.ListSearchResultReply.FromString,
             options,

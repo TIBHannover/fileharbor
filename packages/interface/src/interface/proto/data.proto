@@ -1,13 +1,16 @@
 syntax = "proto3";
 
-package iart.indexer;
+package fileharbor;
 
 message ImageData {
   bytes content = 2;
-  string type = 3;
+  string ext = 3;
 }
 
-message StringData { string text = 2; }
+message TextData {
+  string text = 1;
+  string language = 2;
+}
 
 message Concept {
   string concept = 1;
@@ -47,17 +50,26 @@ message Pose {
   repeated float scores = 4;
 }
 
-message PluginData {
+message BoolData { bool value = 1; }
+
+message IntData { int64 value = 1; }
+
+message FloatData { float value = 1; }
+
+message Data {
   string id = 1;
   string name = 2;
   oneof data {
     ImageData image = 3;
-    StringData string = 4;
+    TextData text = 4;
     ClassifierResult classifier = 5;
     Feature feature = 6;
-    BinaryFeature binary_eature = 7;
+    BinaryFeature binary_feature = 7;
     BoundingBox bounding_box = 8;
     Pose pose = 9;
+    BoolData bool = 10;
+    IntData int = 11;
+    FloatData float = 12;
   }
 }
 
@@ -81,7 +93,7 @@ enum PluginDataType {
   FACES_DATA = 16;
   CONTAINER_DATA = 17;
   VIDEO_TEMPORAL_EMBEDDING_DATA = 18;
-  STRING_DATA = 19;
+  TEXT_DATA = 19;
 
   FACE_CLUSTER_DATA = 20;
   PLACE_CLUSTER_DATA = 21;
@@ -89,4 +101,8 @@ enum PluginDataType {
 
   CLUSTER_DATA = 23;
   META_DATA = 24;
+
+  BOOL_DATA = 25;
+  INT_DATA = 26;
+  FLOAT_DATA = 27;
 }

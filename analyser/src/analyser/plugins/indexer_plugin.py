@@ -1,13 +1,11 @@
 import os
-import re
-import sys
 import logging
-import importlib
+from dataclasses import dataclass
 from typing import List, Dict
 
-from analyser.utils.plugin.manager import Manager
 from analyser.utils.plugin.factory import Factory
 from analyser.utils.plugin.plugin import Plugin
+from analyser.plugins.compute_plugin import ComputePluginManager
 
 
 class IndexerPlugin(Plugin):
@@ -31,149 +29,229 @@ class IndexerFactory(
     pass
 
 
-class IndexerPluginManager(Manager):
-    _indexer_plugins = {}
+@dataclass
+class IndexingPluginMapping:
+    index_name: str
+    compute_plugin: str
+    input_mapping: Dict[str, str]
+    fields: List[str]
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.find()
-        self.plugin_list = self.init_plugins()
 
-    @classmethod
-    def export(cls, name):
-        def export_helper(plugin):
-            cls._indexer_plugins[name] = plugin
-            return plugin
+@dataclass
+class SearchPluginMapping:
+    index_name: str
+    compute_plugin: str
+    input_mapping: Dict[str, str]
+    fields: List[str]
 
-        return export_helper
 
-    def plugins(self):
-        return self._indexer_plugins
+@dataclass
+class PayloadMapping:
+    fields: List[str]
 
-    def find(
-        self, path=os.path.join(os.path.abspath(os.path.dirname(__file__)), "indexer")
+
+class IndexerPluginManager:
+
+    def __init__(
+        self,
+        config: Dict,
+        compute_plugin_manager: ComputePluginManager,
+        indexer_plugin_factory: IndexerFactory = None,
+        **kwargs,
     ):
-        file_re = re.compile(r"(.+?)\.py$")
+        super().__init__(**kwargs)
+        self.config = config
 
-        for pl in os.listdir(path):
-            match = re.match(file_re, pl)
+        if indexer_plugin_factory is None:
+            indexer_plugin_factory = IndexerFactory()
 
-            if match:
-                a = importlib.import_module(
-                    "analyser.plugins.indexer.{}".format(match.group(1))
+        self.indexer_plugin_factory = indexer_plugin_factory
+        self.compute_plugin_manager = compute_plugin_manager
+        self.check_and_init_indexes()
+
+    def init_indexes(
+        self,
+        indexer_plugin,
+        index,
+        # target_index_configuration,
+        # current_index_configuration=None,
+    ):
+
+        # check what the configuration wants
+        target_index_configuration = []
+        for indexing_plugin in index.get("indexing_plugin", []):
+            compute_plugin = self.compute_plugin_manager[
+                indexing_plugin.get("compute_plugin")
+            ]
+
+            target_index_configuration.append(
+                {
+                    "name": indexing_plugin.get("index_name"),
+                    "size": compute_plugin["compute_plugin"].embedding_size,
+                }
+            )
+
+        # check if the collection exists and what are the indexes
+        current_index_configuration = indexer_plugin.get_collection_indexes(
+            index.get("name")
+        )
+
+        # there is nothing so we will create an index
+        if current_index_configuration is None:
+            logging.info(f'Create new collection "{index.get("name")}"')
+            indexer_plugin.create_collection(
+                name=index.get("name"),
+                indexes=target_index_configuration,
+            )
+            return
+
+        # check if the existing index is compatible with the target index from the config
+        current_index_configuration = {
+            x["name"]: x["size"] for x in current_index_configuration
+        }
+        match = True
+        for x in target_index_configuration:
+            if x["name"] in current_index_configuration:
+                if x["size"] != current_index_configuration[x["name"]]:
+                    logging.error(
+                        f'Size different between existing index and configuration for index "{x['name']}" ({x['size']} vs {current_index_configuration[x['name']]}).'
+                    )
+                    match = False
+
+            else:
+                logging.error(
+                    f'Target index "{x['name']}" didn\'t exists in current collection.'
                 )
-                function_dir = dir(a)
+                match = False
 
-                if "register" in function_dir:
-                    a.register(self)
+        if not match:
+            logging.error(
+                f'Target index "{x['name']}" is not compatible with the existing index'
+            )
+            # TODO fix
+            exit(-1)
 
-    def get_collection_indexes(self, name: str = None):
-        if name is None:
-            name = "default"
+    def check_and_init_indexes(self):
 
+        # Build an dict with index name to indexer plugin and config
+        self.indexes = {}
+        for index in self.config.get("index", []):
+            index_name = index.get("name")
+            if index_name is None and not isinstance(index_name, str):
+                logging.error("Index has no name field or it is not a string.")
+                exit(-1)
+
+            indexer_plugin_config = index.get("indexer_plugin")
+            if indexer_plugin_config is None or not isinstance(
+                indexer_plugin_config, dict
+            ):
+                logging.error(
+                    f'Index "{index_name}" has no indexer_plugin field or it is not a dictionary.'
+                )
+                exit(-1)
+
+            indexer_plugin_type = indexer_plugin_config.get("type")
+            if indexer_plugin_type is None or not isinstance(indexer_plugin_type, str):
+                logging.error(
+                    f'Index "{index_name}" has no type field or it is not a dictionary.'
+                )
+                exit(-1)
+
+            indexer_plugin = self.indexer_plugin_factory.build(
+                indexer_plugin_type, config=indexer_plugin_config.get("params", {})
+            )
+
+            if index_name in self.indexes:
+                logging.error(
+                    f'There is more than one index with the name "{index_name}".'
+                )
+
+            self.init_indexes(indexer_plugin, index)
+
+            self.indexes[index_name] = {
+                "indexer_plugin": indexer_plugin,
+                "config": index,
+            }
+
+    def __contains__(self, collection_name):
+        print(self.indexes[collection_name], flush=True)
+        return collection_name in self.indexes
+
+    def list_collections(self):
         # TODO add lock here
-        logging.info(f"[IndexerPluginManager]: get_collection_indexes")
+        logging.info(f"[IndexerPluginManager::list_collections]")
 
-        for plugin in self.plugin_list:
-            plugin = plugin["plugin"]
-            logging.info(f"[IndexerPluginManager]: {plugin.name}")
+        result = []
+        for index_name, x in self.indexes.items():
+            result.append(index_name)
 
-            return plugin.get_collection_indexes(
-                name=name,
-            )
+        return result
 
-    def create_collection(self, name, indexes: List[Dict]):
+    def get_indexing_plugin_mappings(
+        self, collection_name: str
+    ) -> List[IndexingPluginMapping]:
+        if collection_name not in self:
+            return None
+        collection_config = self.indexes[collection_name]["config"]
 
-        # TODO add lock here
-        logging.info(f"[IndexerPluginManager]: create_collection")
+        results = []
+        for indexing_plugin in collection_config["indexing_plugin"]:
+            results.append(IndexingPluginMapping(**indexing_plugin))
 
-        for plugin in self.plugin_list:
-            plugin = plugin["plugin"]
-            logging.info(f"[IndexerPluginManager]: {plugin.name}")
+        return results
 
-            plugin.create_collection(
-                name=name,
-                indexes=indexes,
-            )
+    def get_search_plugin_mappings(
+        self, collection_name: str
+    ) -> List[SearchPluginMapping]:
+        if collection_name not in self:
+            return None
+        collection_config = self.indexes[collection_name]["config"]
 
-    def delete_collection(self, name):
+        results = []
+        for search_plugin in collection_config.get("search_plugin", []):
+            results.append(SearchPluginMapping(**search_plugin))
 
-        # TODO delete lock here
-        logging.info(f"[IndexerPluginManager]: delete_collection")
+        return results
 
-        for plugin in self.plugin_list:
-            plugin = plugin["plugin"]
-            logging.info(f"[IndexerPluginManager]: {plugin.name}")
+    def get_payload_mapping(self, collection_name: str) -> PayloadMapping:
+        if collection_name not in self:
+            return None
+        collection_config = self.indexes[collection_name]["config"]
 
-            plugin.delete_collection(
-                name=name,
-            )
+        return PayloadMapping(fields=collection_config.get("payload_fields", []))
 
     def add_points(self, collection_name, points: List[Dict]):
         # TODO add lock here
-        logging.info(f"[QDrantIndexer]: add_points")
+        logging.info(f"[IndexerPluginManager]: add_points")
 
-        for plugin in self.plugin_list:
-            plugin = plugin["plugin"]
-            logging.info(f"[IndexerPluginManager]: {plugin.name}")
-
-            plugin.add_points(collection_name=collection_name, points=points)
-
-    def indexing(
-        self,
-        index_entries=None,
-        collections=None,
-        rebuild=False,
-        plugins=None,
-        configs=None,
-    ):
-        # TODO add lock here
-        logging.info(f"[IndexerPluginManager]: indexing")
-        logging.info(f"[IndexerPluginManager]: {len(self.plugin_list)} {collections}")
-
-        for plugin in self.plugin_list:
-            plugin = plugin["plugin"]
-            logging.info(f"[IndexerPluginManager]: {plugin.name}")
-
-            plugin.indexing(
-                index_entries=index_entries,
-                rebuild=rebuild,
-                collections=collections,
+        if collection_name not in self.indexes:
+            logging.error(
+                "[IndexerPluginManager::add_points] Unknown collection '{collection_name}'"
             )
+            return None
 
-    def search(
+        indexer_plugin = self.indexes[collection_name]["indexer_plugin"]
+
+        indexer_plugin.add_points(collection_name=collection_name, points=points)
+
+    def delete_collection(
         self,
-        queries,
-        filters,
-        size=100,
-    ):
-        logging.error(f"INDEX {queries}")
-        result_list = []
-
-        for plugin in self.plugin_list:
-            plugin = plugin["plugin"]
-            entries = plugin.search(
-                queries=queries,
-                filters=filters,
-                size=size,
-            )
-
-            result_list.extend(entries)
-
-        return result_list
-
-    def delete(
-        self,
-        collections=None,
+        collection_name=None,
     ):
         # TODO add lock here
         logging.info(f"[IndexerPluginManager]: delete")
-        logging.info(f"[IndexerPluginManager]: {len(self.plugin_list)} {collections}")
+        logging.info(f"[IndexerPluginManager]: {collection_name}")
 
-        for plugin in self.plugin_list:
-            plugin = plugin["plugin"]
-            logging.info(f"[IndexerPluginManager]: {plugin.name}")
-
-            plugin.delete(
-                collections=collections,
+        if collection_name not in self.indexes:
+            logging.error(
+                "[IndexerPluginManager::delete] Unknown collection '{collection_name}'"
             )
+            return None
+
+        status = self.indexes[collection_name]["indexer_plugin"].delete_collection(
+            collection_name
+        )
+        if status is True:
+            del self.indexes[collection_name]
+        print("Status", status, flush=True)
+        return status

@@ -79,9 +79,9 @@ class ComputePlugin(Plugin):
                 input_dict[input.name].append(
                     {"type": "image", "content": input.image.content}
                 )
-            if input.WhichOneof("data") == "string":
+            if input.WhichOneof("data") == "text":
                 input_dict[input.name].append(
-                    {"type": "string", "content": input.string.text}
+                    {"type": "text", "content": input.text.text}
                 )
 
         parameter_dict = {}
@@ -119,7 +119,7 @@ class ComputePlugin(Plugin):
 
                 elif value["type"] == "string":
                     input_field.name = "text"
-                    input_field.string.text = value["content"]
+                    input_field.text.text = value["content"]
 
         for key, value in parameters.items():
             parameter = request.parameters.add()

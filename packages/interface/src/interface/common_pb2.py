@@ -22,7 +22,7 @@ from . import data_pb2 as data__pb2
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n\x0c\x63ommon.proto\x12\x0ciart.indexer\x1a\ndata.proto"9\n\nCollection\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x11\n\tis_public\x18\x03 \x01(\x08":\n\x03RoI\x12\t\n\x01x\x18\x01 \x01(\x02\x12\t\n\x01y\x18\x02 \x01(\x02\x12\r\n\x05width\x18\x03 \x01(\x02\x12\x0e\n\x06height\x18\x04 \x01(\x02"`\n\nValueField\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x14\n\nstring_val\x18\x02 \x01(\tH\x00\x12\x11\n\x07int_val\x18\x03 \x01(\x05H\x00\x12\x13\n\tfloat_val\x18\x04 \x01(\x02H\x00\x42\x07\n\x05value"\xdf\x01\n\x05Image\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0e\n\x04path\x18\x02 \x01(\tH\x00\x12\x11\n\x07\x65ncoded\x18\x03 \x01(\x0cH\x00\x12\x1e\n\x03roi\x18\x04 \x01(\x0b\x32\x11.iart.indexer.RoI\x12&\n\x04meta\x18\x05 \x03(\x0b\x32\x18.iart.indexer.ValueField\x12(\n\x06origin\x18\x06 \x03(\x0b\x32\x18.iart.indexer.ValueField\x12,\n\ncollection\x18\x07 \x01(\x0b\x32\x18.iart.indexer.CollectionB\x07\n\x05image"J\n\x0cPluginConfig\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x02 \x01(\t\x12\x0c\n\x04type\x18\x03 \x01(\t\x12\r\n\x05state\x18\x04 \x01(\t"g\n\x0cPluginResult\x12\x0e\n\x06plugin\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x0f\n\x07version\x18\x03 \x01(\t\x12(\n\x06result\x18\x04 \x01(\x0b\x32\x18.iart.indexer.PluginData"e\n\x0fPluginParameter\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\x0c\x12\r\n\x05shape\x18\x03 \x03(\x05\x12$\n\x04type\x18\x04 \x01(\x0e\x32\x16.iart.indexer.DataType"x\n\tPluginRun\x12\x0e\n\x06plugin\x18\x01 \x01(\t\x12\x31\n\nparameters\x18\x02 \x03(\x0b\x32\x1d.iart.indexer.PluginParameter\x12(\n\x06inputs\x18\x03 \x03(\x0b\x32\x18.iart.indexer.PluginData*\x90\x01\n\x08\x44\x61taType\x12\x0f\n\x0bUNKOWN_TYPE\x10\x00\x12\x0f\n\x0bSTRING_TYPE\x10\x01\x12\x0c\n\x08INT_TYPE\x10\x02\x12\x0e\n\nFLOAT_TYPE\x10\x03\x12\r\n\tBOOL_TYPE\x10\x04\x12\x0e\n\nBYTES_TYPE\x10\x05\x12\x0e\n\nIMAGE_TYPE\x10\x06\x12\x15\n\x11\x42OUNDING_BOX_TYPE\x10\x07\x62\x06proto3'
+    b'\n\x0c\x63ommon.proto\x12\nfileharbor\x1a\ndata.proto":\n\x03RoI\x12\t\n\x01x\x18\x01 \x01(\x02\x12\t\n\x01y\x18\x02 \x01(\x02\x12\r\n\x05width\x18\x03 \x01(\x02\x12\x0e\n\x06height\x18\x04 \x01(\x02"`\n\nValueField\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x14\n\nstring_val\x18\x02 \x01(\tH\x00\x12\x11\n\x07int_val\x18\x03 \x01(\x05H\x00\x12\x13\n\tfloat_val\x18\x04 \x01(\x02H\x00\x42\x07\n\x05value"J\n\x0cPluginConfig\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x02 \x01(\t\x12\x0c\n\x04type\x18\x03 \x01(\t\x12\r\n\x05state\x18\x04 \x01(\t"_\n\x0cPluginResult\x12\x0e\n\x06plugin\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x0f\n\x07version\x18\x03 \x01(\t\x12 \n\x06result\x18\x04 \x01(\x0b\x32\x10.fileharbor.Data"c\n\x0fPluginParameter\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\x0c\x12\r\n\x05shape\x18\x03 \x03(\x05\x12"\n\x04type\x18\x04 \x01(\x0e\x32\x14.fileharbor.DataType"n\n\tPluginRun\x12\x0e\n\x06plugin\x18\x01 \x01(\t\x12/\n\nparameters\x18\x02 \x03(\x0b\x32\x1b.fileharbor.PluginParameter\x12 \n\x06inputs\x18\x03 \x03(\x0b\x32\x10.fileharbor.Data*\x90\x01\n\x08\x44\x61taType\x12\x0f\n\x0bUNKOWN_TYPE\x10\x00\x12\x0f\n\x0bSTRING_TYPE\x10\x01\x12\x0c\n\x08INT_TYPE\x10\x02\x12\x0e\n\nFLOAT_TYPE\x10\x03\x12\r\n\tBOOL_TYPE\x10\x04\x12\x0e\n\nBYTES_TYPE\x10\x05\x12\x0e\n\nIMAGE_TYPE\x10\x06\x12\x15\n\x11\x42OUNDING_BOX_TYPE\x10\x07\x62\x06proto3'
 )
 
 _globals = globals()
@@ -30,22 +30,18 @@ _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "common_pb2", _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
     DESCRIPTOR._loaded_options = None
-    _globals["_DATATYPE"]._serialized_start = 892
-    _globals["_DATATYPE"]._serialized_end = 1036
-    _globals["_COLLECTION"]._serialized_start = 42
-    _globals["_COLLECTION"]._serialized_end = 99
-    _globals["_ROI"]._serialized_start = 101
-    _globals["_ROI"]._serialized_end = 159
-    _globals["_VALUEFIELD"]._serialized_start = 161
-    _globals["_VALUEFIELD"]._serialized_end = 257
-    _globals["_IMAGE"]._serialized_start = 260
-    _globals["_IMAGE"]._serialized_end = 483
-    _globals["_PLUGINCONFIG"]._serialized_start = 485
-    _globals["_PLUGINCONFIG"]._serialized_end = 559
-    _globals["_PLUGINRESULT"]._serialized_start = 561
-    _globals["_PLUGINRESULT"]._serialized_end = 664
-    _globals["_PLUGINPARAMETER"]._serialized_start = 666
-    _globals["_PLUGINPARAMETER"]._serialized_end = 767
-    _globals["_PLUGINRUN"]._serialized_start = 769
-    _globals["_PLUGINRUN"]._serialized_end = 889
+    _globals["_DATATYPE"]._serialized_start = 585
+    _globals["_DATATYPE"]._serialized_end = 729
+    _globals["_ROI"]._serialized_start = 40
+    _globals["_ROI"]._serialized_end = 98
+    _globals["_VALUEFIELD"]._serialized_start = 100
+    _globals["_VALUEFIELD"]._serialized_end = 196
+    _globals["_PLUGINCONFIG"]._serialized_start = 198
+    _globals["_PLUGINCONFIG"]._serialized_end = 272
+    _globals["_PLUGINRESULT"]._serialized_start = 274
+    _globals["_PLUGINRESULT"]._serialized_end = 369
+    _globals["_PLUGINPARAMETER"]._serialized_start = 371
+    _globals["_PLUGINPARAMETER"]._serialized_end = 470
+    _globals["_PLUGINRUN"]._serialized_start = 472
+    _globals["_PLUGINRUN"]._serialized_end = 582
 # @@protoc_insertion_point(module_scope)

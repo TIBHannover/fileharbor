@@ -38,13 +38,13 @@ class AnalyserStub(object):
             channel: A grpc.Channel.
         """
         self.list_plugins = channel.unary_unary(
-            "/iart.indexer.Analyser/list_plugins",
+            "/fileharbor.Analyser/list_plugins",
             request_serializer=analyser__pb2.ListPluginsRequest.SerializeToString,
             response_deserializer=analyser__pb2.ListPluginsReply.FromString,
             _registered_method=True,
         )
         self.analyse = channel.unary_unary(
-            "/iart.indexer.Analyser/analyse",
+            "/fileharbor.Analyser/analyse",
             request_serializer=analyser__pb2.AnalyseRequest.SerializeToString,
             response_deserializer=analyser__pb2.AnalyseReply.FromString,
             _registered_method=True,
@@ -81,10 +81,10 @@ def add_AnalyserServicer_to_server(servicer, server):
         ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-        "iart.indexer.Analyser", rpc_method_handlers
+        "fileharbor.Analyser", rpc_method_handlers
     )
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers("iart.indexer.Analyser", rpc_method_handlers)
+    server.add_registered_method_handlers("fileharbor.Analyser", rpc_method_handlers)
 
 
 # This class is part of an EXPERIMENTAL API.
@@ -107,7 +107,7 @@ class Analyser(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/iart.indexer.Analyser/list_plugins",
+            "/fileharbor.Analyser/list_plugins",
             analyser__pb2.ListPluginsRequest.SerializeToString,
             analyser__pb2.ListPluginsReply.FromString,
             options,
@@ -137,7 +137,7 @@ class Analyser(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/iart.indexer.Analyser/analyse",
+            "/fileharbor.Analyser/analyse",
             analyser__pb2.AnalyseRequest.SerializeToString,
             analyser__pb2.AnalyseReply.FromString,
             options,

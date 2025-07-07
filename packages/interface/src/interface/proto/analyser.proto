@@ -4,7 +4,7 @@ syntax = "proto3";
 // ../web/tunnel.proto python -m grpc_tools.protoc -I../backend --python_out=.
 // --grpc_python_out=. ../backend/tunnel.proto create json stringds
 
-package iart.indexer;
+package fileharbor;
 
 import "data.proto";
 import "common.proto";

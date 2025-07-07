@@ -1,39 +1,27 @@
-import copy
 import grpc
 import sys
 import time
-import json
-import uuid
 import tomllib
 
 import argparse
-import imageio.v3 as iio
 import logging
-import traceback
 
-from data import DataManager
 from interface import (
-    analyser_pb2,
     analyser_pb2_grpc,
-    searcher_pb2,
     searcher_pb2_grpc,
-    collection_pb2,
     collection_pb2_grpc,
 )
-
-from typing import Dict
 
 from concurrent import futures
 
 from shared_object import SharedObject
-from plugins import IndexerFactory
-from interface.utils import meta_from_proto
-
-from jobs import IndexingJob, SearchJob
+from plugins import IndexerPluginManager
 
 from services import AnalyserServicer, CollectionServicer, SearcherServicer
-from inference import InferenceServerFactory, InferenceServerManager
-from plugins import ComputePluginFactory, ComputePluginManager
+from inference import InferenceServerManager
+from plugins import ComputePluginManager
+from plugins.cache import Cache
+from data import DataManager
 
 
 class Server:
@@ -44,13 +32,30 @@ class Server:
             config, inference_server_manager=inference_server_manager
         )
 
-        indexes = self.check_and_init_indexes(compute_plugin_manager)
+        indexer_plugin_manager = IndexerPluginManager(
+            config, compute_plugin_manager=compute_plugin_manager
+        )
+
+        cache = Cache(cache_dir=config.get("cache", {"path": None})["path"], mode="r")
+
+        data_config = config.get("data", None)
+        data_dir = None
+        if data_config is not None:
+            data_dir = data_config.get("path", None)
+            cache_config = data_config.get("cache")
+            if cache_config is not None:
+                cache = CacheManager.build(
+                    name=cache_config["type"], config=cache_config["params"]
+                )
+
+        data_manager = DataManager(data_dir=data_dir, cache=cache)
 
         self.shared_object = SharedObject(
             config,
             inference_server_manager=inference_server_manager,
             compute_plugin_manager=compute_plugin_manager,
-            indexes=indexes,
+            indexer_plugin_manager=indexer_plugin_manager,
+            data_manager=data_manager,
         )
 
         self.indexer_servicer = AnalyserServicer(config, self.shared_object)
@@ -86,112 +91,6 @@ class Server:
 
         logging.info("Start all inference servers")
         inference_server_manager.start()
-
-    def init_indexes(
-        self,
-        indexer_plugin,
-        compute_plugin_manager: ComputePluginManager,
-        index,
-        # target_index_configuration,
-        # current_index_configuration=None,
-    ):
-
-        # check what the configuration wants
-        target_index_configuration = []
-        for indexing_plugin in index.get("indexing_plugin", []):
-            compute_plugin = compute_plugin_manager[
-                indexing_plugin.get("compute_plugin")
-            ]
-
-            target_index_configuration.append(
-                {
-                    "name": indexing_plugin.get("index_name"),
-                    "size": compute_plugin["compute_plugin"].embedding_size,
-                }
-            )
-
-        # check if the collection exists and what are the indexes
-        current_index_configuration = indexer_plugin.get_collection_indexes(
-            index.get("name")
-        )
-
-        # there is nothing so we will create an index
-        if current_index_configuration is None:
-            logging.info(f'Create new collection "{index.get("name")}"')
-            indexer_plugin.create_collection(
-                name=index.get("name"),
-                indexes=target_index_configuration,
-            )
-            return
-
-        # check if the existing index is compatible with the target index from the config
-        current_index_configuration = {
-            x["name"]: x["size"] for x in current_index_configuration
-        }
-        match = True
-        for x in target_index_configuration:
-            if x["name"] in current_index_configuration:
-                if x["size"] != current_index_configuration[x["name"]]:
-                    logging.error(
-                        f'Size different between existing index and configuration for index "{x['name']}" ({x['size']} vs {current_index_configuration[x['name']]}).'
-                    )
-                    match = False
-
-            else:
-                logging.error(
-                    f'Target index "{x['name']}" didn\'t exists in current collection.'
-                )
-                match = False
-
-        if not match:
-            logging.error(
-                f'Target index "{x['name']}" is not compatible with the existing index'
-            )
-            # TODO fix
-            exit()
-
-    def check_and_init_indexes(self, compute_plugin_manager: ComputePluginManager):
-
-        indexer_plugin_factory = IndexerFactory()
-
-        # Build an dict with index name to indexer plugin and config
-        indexes = {}
-        for index in self.config.get("index", []):
-            index_name = index.get("name")
-            if index_name is None and not isinstance(index_name, str):
-                logging.error("Index has no name field or it is not a string.")
-                exit(-1)
-
-            indexer_plugin_config = index.get("indexer_plugin")
-            if indexer_plugin_config is None or not isinstance(
-                indexer_plugin_config, dict
-            ):
-                logging.error(
-                    f'Index "{index_name}" has no indexer_plugin field or it is not a dictionary.'
-                )
-                exit(-1)
-
-            indexer_plugin_type = indexer_plugin_config.get("type")
-            if indexer_plugin_type is None or not isinstance(indexer_plugin_type, str):
-                logging.error(
-                    f'Index "{index_name}" has no type field or it is not a dictionary.'
-                )
-                exit(-1)
-
-            indexer_plugin = indexer_plugin_factory.build(
-                indexer_plugin_type, config=indexer_plugin_config.get("params", {})
-            )
-
-            if index_name in indexes:
-                logging.error(
-                    f'There is more than one index with the name "{index_name}".'
-                )
-
-            self.init_indexes(indexer_plugin, compute_plugin_manager, index)
-
-            indexes[index_name] = {"indexer_plugin": indexer_plugin, "config": index}
-
-        return indexes
 
     def run(self):
         self.server.start()

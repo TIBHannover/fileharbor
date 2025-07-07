@@ -24,33 +24,39 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ndata.proto\x12\x0ciart.indexer\"*\n\tImageData\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\x0c\x12\x0c\n\x04type\x18\x03 \x01(\t\"\x1a\n\nStringData\x12\x0c\n\x04text\x18\x02 \x01(\t\"6\n\x07\x43oncept\x12\x0f\n\x07\x63oncept\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x0c\n\x04prob\x18\x03 \x01(\x02\"K\n\x10\x43lassifierResult\x12\x0e\n\x06plugin\x18\x01 \x01(\t\x12\'\n\x08\x63oncepts\x18\x02 \x03(\x0b\x32\x15.iart.indexer.Concept\"\x1f\n\rBinaryFeature\x12\x0e\n\x06\x62inary\x18\x01 \x01(\t\"7\n\x07\x46\x65\x61ture\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\r\n\x05shape\x18\x02 \x03(\x05\x12\x0f\n\x07\x66\x65\x61ture\x18\x03 \x03(\x02\"H\n\x0b\x42oundingBox\x12\t\n\x01x\x18\x01 \x01(\x02\x12\t\n\x01y\x18\x02 \x01(\x02\x12\t\n\x01w\x18\x03 \x01(\x02\x12\t\n\x01h\x18\x04 \x01(\x02\x12\r\n\x05score\x18\x05 \x01(\x02\"R\n\x04Pose\x12$\n\x04type\x18\x01 \x01(\x0e\x32\x16.iart.indexer.PoseType\x12\t\n\x01x\x18\x02 \x03(\x02\x12\t\n\x01y\x18\x03 \x03(\x02\x12\x0e\n\x06scores\x18\x04 \x03(\x02\"\xf1\x02\n\nPluginData\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12(\n\x05image\x18\x03 \x01(\x0b\x32\x17.iart.indexer.ImageDataH\x00\x12*\n\x06string\x18\x04 \x01(\x0b\x32\x18.iart.indexer.StringDataH\x00\x12\x34\n\nclassifier\x18\x05 \x01(\x0b\x32\x1e.iart.indexer.ClassifierResultH\x00\x12(\n\x07\x66\x65\x61ture\x18\x06 \x01(\x0b\x32\x15.iart.indexer.FeatureH\x00\x12\x34\n\rbinary_eature\x18\x07 \x01(\x0b\x32\x1b.iart.indexer.BinaryFeatureH\x00\x12\x31\n\x0c\x62ounding_box\x18\x08 \x01(\x0b\x32\x19.iart.indexer.BoundingBoxH\x00\x12\"\n\x04pose\x18\t \x01(\x0b\x32\x12.iart.indexer.PoseH\x00\x42\x06\n\x04\x64\x61ta*\x1e\n\x08PoseType\x12\x12\n\x0ePOSE_TYPE_COCO\x10\x00*\xe3\x03\n\x0ePluginDataType\x12\x0f\n\x0bUNKOWN_DATA\x10\x00\x12\x0e\n\nVIDEO_DATA\x10\x01\x12\x0e\n\nIMAGE_DATA\x10\x02\x12\x0f\n\x0b\x42\x42OXES_DATA\x10\x03\x12\x0e\n\nAUDIO_DATA\x10\x04\x12\x0f\n\x0bSCALAR_DATA\x10\x05\x12\x0e\n\nSHOTS_DATA\x10\x06\x12\x0f\n\x0bIMAGES_DATA\x10\x07\x12\r\n\tLIST_DATA\x10\x08\x12\x0c\n\x08RGB_DATA\x10\t\x12\r\n\tHIST_DATA\x10\n\x12\x11\n\rRGB_HIST_DATA\x10\x0b\x12\x13\n\x0f\x41NNOTATION_DATA\x10\x0c\x12\x18\n\x14IMAGE_EMBEDDING_DATA\x10\r\x12\x17\n\x13TEXT_EMBEDDING_DATA\x10\x0e\x12\r\n\tKPSS_DATA\x10\x0f\x12\x0e\n\nFACES_DATA\x10\x10\x12\x12\n\x0e\x43ONTAINER_DATA\x10\x11\x12!\n\x1dVIDEO_TEMPORAL_EMBEDDING_DATA\x10\x12\x12\x0f\n\x0bSTRING_DATA\x10\x13\x12\x15\n\x11\x46\x41\x43\x45_CLUSTER_DATA\x10\x14\x12\x16\n\x12PLACE_CLUSTER_DATA\x10\x15\x12\x0f\n\x0bPLACES_DATA\x10\x16\x12\x10\n\x0c\x43LUSTER_DATA\x10\x17\x12\r\n\tMETA_DATA\x10\x18\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ndata.proto\x12\nfileharbor\")\n\tImageData\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\x0c\x12\x0b\n\x03\x65xt\x18\x03 \x01(\t\"*\n\x08TextData\x12\x0c\n\x04text\x18\x01 \x01(\t\x12\x10\n\x08language\x18\x02 \x01(\t\"6\n\x07\x43oncept\x12\x0f\n\x07\x63oncept\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x0c\n\x04prob\x18\x03 \x01(\x02\"I\n\x10\x43lassifierResult\x12\x0e\n\x06plugin\x18\x01 \x01(\t\x12%\n\x08\x63oncepts\x18\x02 \x03(\x0b\x32\x13.fileharbor.Concept\"\x1f\n\rBinaryFeature\x12\x0e\n\x06\x62inary\x18\x01 \x01(\t\"7\n\x07\x46\x65\x61ture\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\r\n\x05shape\x18\x02 \x03(\x05\x12\x0f\n\x07\x66\x65\x61ture\x18\x03 \x03(\x02\"H\n\x0b\x42oundingBox\x12\t\n\x01x\x18\x01 \x01(\x02\x12\t\n\x01y\x18\x02 \x01(\x02\x12\t\n\x01w\x18\x03 \x01(\x02\x12\t\n\x01h\x18\x04 \x01(\x02\x12\r\n\x05score\x18\x05 \x01(\x02\"P\n\x04Pose\x12\"\n\x04type\x18\x01 \x01(\x0e\x32\x14.fileharbor.PoseType\x12\t\n\x01x\x18\x02 \x03(\x02\x12\t\n\x01y\x18\x03 \x03(\x02\x12\x0e\n\x06scores\x18\x04 \x03(\x02\"\x19\n\x08\x42oolData\x12\r\n\x05value\x18\x01 \x01(\x08\"\x18\n\x07IntData\x12\r\n\x05value\x18\x01 \x01(\x03\"\x1a\n\tFloatData\x12\r\n\x05value\x18\x01 \x01(\x02\"\xcc\x03\n\x04\x44\x61ta\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12&\n\x05image\x18\x03 \x01(\x0b\x32\x15.fileharbor.ImageDataH\x00\x12$\n\x04text\x18\x04 \x01(\x0b\x32\x14.fileharbor.TextDataH\x00\x12\x32\n\nclassifier\x18\x05 \x01(\x0b\x32\x1c.fileharbor.ClassifierResultH\x00\x12&\n\x07\x66\x65\x61ture\x18\x06 \x01(\x0b\x32\x13.fileharbor.FeatureH\x00\x12\x33\n\x0e\x62inary_feature\x18\x07 \x01(\x0b\x32\x19.fileharbor.BinaryFeatureH\x00\x12/\n\x0c\x62ounding_box\x18\x08 \x01(\x0b\x32\x17.fileharbor.BoundingBoxH\x00\x12 \n\x04pose\x18\t \x01(\x0b\x32\x10.fileharbor.PoseH\x00\x12$\n\x04\x62ool\x18\n \x01(\x0b\x32\x14.fileharbor.BoolDataH\x00\x12\"\n\x03int\x18\x0b \x01(\x0b\x32\x13.fileharbor.IntDataH\x00\x12&\n\x05\x66loat\x18\x0c \x01(\x0b\x32\x15.fileharbor.FloatDataH\x00\x42\x06\n\x04\x64\x61ta*\x1e\n\x08PoseType\x12\x12\n\x0ePOSE_TYPE_COCO\x10\x00*\x8e\x04\n\x0ePluginDataType\x12\x0f\n\x0bUNKOWN_DATA\x10\x00\x12\x0e\n\nVIDEO_DATA\x10\x01\x12\x0e\n\nIMAGE_DATA\x10\x02\x12\x0f\n\x0b\x42\x42OXES_DATA\x10\x03\x12\x0e\n\nAUDIO_DATA\x10\x04\x12\x0f\n\x0bSCALAR_DATA\x10\x05\x12\x0e\n\nSHOTS_DATA\x10\x06\x12\x0f\n\x0bIMAGES_DATA\x10\x07\x12\r\n\tLIST_DATA\x10\x08\x12\x0c\n\x08RGB_DATA\x10\t\x12\r\n\tHIST_DATA\x10\n\x12\x11\n\rRGB_HIST_DATA\x10\x0b\x12\x13\n\x0f\x41NNOTATION_DATA\x10\x0c\x12\x18\n\x14IMAGE_EMBEDDING_DATA\x10\r\x12\x17\n\x13TEXT_EMBEDDING_DATA\x10\x0e\x12\r\n\tKPSS_DATA\x10\x0f\x12\x0e\n\nFACES_DATA\x10\x10\x12\x12\n\x0e\x43ONTAINER_DATA\x10\x11\x12!\n\x1dVIDEO_TEMPORAL_EMBEDDING_DATA\x10\x12\x12\r\n\tTEXT_DATA\x10\x13\x12\x15\n\x11\x46\x41\x43\x45_CLUSTER_DATA\x10\x14\x12\x16\n\x12PLACE_CLUSTER_DATA\x10\x15\x12\x0f\n\x0bPLACES_DATA\x10\x16\x12\x10\n\x0c\x43LUSTER_DATA\x10\x17\x12\r\n\tMETA_DATA\x10\x18\x12\r\n\tBOOL_DATA\x10\x19\x12\x0c\n\x08INT_DATA\x10\x1a\x12\x0e\n\nFLOAT_DATA\x10\x1b\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'data_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_POSETYPE']._serialized_start=853
-  _globals['_POSETYPE']._serialized_end=883
-  _globals['_PLUGINDATATYPE']._serialized_start=886
-  _globals['_PLUGINDATATYPE']._serialized_end=1369
-  _globals['_IMAGEDATA']._serialized_start=28
-  _globals['_IMAGEDATA']._serialized_end=70
-  _globals['_STRINGDATA']._serialized_start=72
-  _globals['_STRINGDATA']._serialized_end=98
-  _globals['_CONCEPT']._serialized_start=100
-  _globals['_CONCEPT']._serialized_end=154
-  _globals['_CLASSIFIERRESULT']._serialized_start=156
-  _globals['_CLASSIFIERRESULT']._serialized_end=231
-  _globals['_BINARYFEATURE']._serialized_start=233
-  _globals['_BINARYFEATURE']._serialized_end=264
-  _globals['_FEATURE']._serialized_start=266
-  _globals['_FEATURE']._serialized_end=321
-  _globals['_BOUNDINGBOX']._serialized_start=323
-  _globals['_BOUNDINGBOX']._serialized_end=395
-  _globals['_POSE']._serialized_start=397
-  _globals['_POSE']._serialized_end=479
-  _globals['_PLUGINDATA']._serialized_start=482
-  _globals['_PLUGINDATA']._serialized_end=851
+  _globals['_POSETYPE']._serialized_start=1034
+  _globals['_POSETYPE']._serialized_end=1064
+  _globals['_PLUGINDATATYPE']._serialized_start=1067
+  _globals['_PLUGINDATATYPE']._serialized_end=1593
+  _globals['_IMAGEDATA']._serialized_start=26
+  _globals['_IMAGEDATA']._serialized_end=67
+  _globals['_TEXTDATA']._serialized_start=69
+  _globals['_TEXTDATA']._serialized_end=111
+  _globals['_CONCEPT']._serialized_start=113
+  _globals['_CONCEPT']._serialized_end=167
+  _globals['_CLASSIFIERRESULT']._serialized_start=169
+  _globals['_CLASSIFIERRESULT']._serialized_end=242
+  _globals['_BINARYFEATURE']._serialized_start=244
+  _globals['_BINARYFEATURE']._serialized_end=275
+  _globals['_FEATURE']._serialized_start=277
+  _globals['_FEATURE']._serialized_end=332
+  _globals['_BOUNDINGBOX']._serialized_start=334
+  _globals['_BOUNDINGBOX']._serialized_end=406
+  _globals['_POSE']._serialized_start=408
+  _globals['_POSE']._serialized_end=488
+  _globals['_BOOLDATA']._serialized_start=490
+  _globals['_BOOLDATA']._serialized_end=515
+  _globals['_INTDATA']._serialized_start=517
+  _globals['_INTDATA']._serialized_end=541
+  _globals['_FLOATDATA']._serialized_start=543
+  _globals['_FLOATDATA']._serialized_end=569
+  _globals['_DATA']._serialized_start=572
+  _globals['_DATA']._serialized_end=1032
 # @@protoc_insertion_point(module_scope)

@@ -1,7 +1,7 @@
 import grpc
 import uuid
-from concurrent import futures
 import logging
+from concurrent import futures
 
 from interface import analyser_pb2, analyser_pb2_grpc
 
@@ -12,9 +12,9 @@ class AnalyserServicer(analyser_pb2_grpc.AnalyserServicer):
         self.shared_object = shared_object
         # self.managers = init_plugins(config)
 
-        # self.indexing_process_pool = futures.ProcessPoolExecutor(
-        #     max_workers=8, initializer=IndexingJob().init_worker, initargs=(config,)
-        # )
+        self.add_points_process_pool = futures.ThreadPoolExecutor(
+            max_workers=8, initargs=(config, shared_object)
+        )
         # self.search_process_pool = futures.ProcessPoolExecutor(
         #     max_workers=8, initializer=SearchJob().init_worker, initargs=(config,)
         # )
