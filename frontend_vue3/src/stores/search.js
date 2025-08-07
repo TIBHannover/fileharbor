@@ -1,8 +1,8 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import axios from '../plugins/axios'
 
-import { useHelper } from '@/composables/helper'
+import keyInObj from '@/composables/useKeyInObj'
 
 export const useSearchStore = defineStore('search', () => {
   const resultList = ref([])
@@ -23,8 +23,7 @@ export const useSearchStore = defineStore('search', () => {
   function search() {
     console.log(queries)
     let queriesWithWeights = queries.value.map((q) => {
-      const helper = useHelper()
-      if (helper.keyInObj(q, 'weights')) {
+      if (keyInObj(q, 'weights')) {
         return q
       }
       q.weights = globalWeights.value

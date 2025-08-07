@@ -1,0 +1,5 @@
+$font-family: 'montserrat', sans-serif;
+
+@use 'vuetify/settings' with (
+  $body-font-family: $font-family,
+)

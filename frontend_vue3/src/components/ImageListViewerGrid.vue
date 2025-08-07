@@ -1,8 +1,12 @@
 <template>
   <div class="flex-view">
-    <ImageItem v-for="(entry, index) in entries" :entry="entry" />
+    <ImageItem
+      v-for="(entry) in entries"
+      :key="entry"
+      :entry="entry"
+    />
 
-    <div class="grid-item-fill"></div>
+    <div class="grid-item-fill" />
 
     <!-- <v-pagination
       v-if="nPages > 1"
@@ -18,10 +22,6 @@
 
 <script setup>
 import ImageItem from '@/components/ImageItem.vue'
-
-const props = defineProps({
-  entries: Array,
-})
 </script>
 
 <style>
@@ -33,7 +33,7 @@ const props = defineProps({
   transition: flex-basis 0.2s ease;
 }
 
-.flex-view:after {
+.flex-view::after {
   content: '';
   flex: auto;
 }

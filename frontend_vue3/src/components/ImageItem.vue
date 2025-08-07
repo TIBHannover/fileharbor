@@ -1,15 +1,33 @@
 <template>
-  <div class="grid-item" :style="{ height: heightString, width: widthString }">
-    <img :src="'http://localhost:8080' + entry.preview" />
+  <div
+    class="grid-item"
+    :style="{ height: heightString, width: widthString }"
+  >
+    <img :src="'http://localhost:8080' + entry.preview">
 
     <!-- <ImageItemModal v-model="dialog" :entry="entry" /> -->
 
     <div class="overlay">
       <div class="view">
-        <v-menu offset-y bottom right>
-          <template v-slot:activator="{ attrs, on: menu }">
-            <v-btn :title="$t('search.object')" v-bind="attrs" v-on="menu" icon variant="text">
-              <v-icon color="white" class="shadow"> mdi-magnify </v-icon>
+        <v-menu
+          offset-y
+          bottom
+          right
+        >
+          <template #activator="{ attrs, on: menu }">
+            <v-btn
+              :title="$t('search.object')"
+              v-bind="attrs"
+              icon
+              variant="text"
+              v-on="menu"
+            >
+              <v-icon
+                color="white"
+                class="shadow"
+              >
+                mdi-magnify
+              </v-icon>
             </v-btn>
           </template>
 
@@ -26,25 +44,51 @@
       </div>
 
       <div class="meta">
-        <div class="text-subtitle-1" :title="title">
+        <div
+          class="text-subtitle-1"
+          :title="title"
+        >
           {{ title }}
         </div>
 
-        <div class="text-caption" :title="artist">
+        <div
+          class="text-caption"
+          :title="artist"
+        >
           {{ artist }}
         </div>
       </div>
     </div>
 
     <div class="bookmark">
-      <v-btn v-if="bookmarked" @click="bookmark" class="ml-n1 clicked" icon variant="text">
-        <v-icon :title="$t('griditem.bookmark.remove')" color="accent" class="shadow">
+      <v-btn
+        v-if="bookmarked"
+        class="ml-n1 clicked"
+        icon
+        variant="text"
+        @click="bookmark"
+      >
+        <v-icon
+          :title="$t('griditem.bookmark.remove')"
+          color="accent"
+          class="shadow"
+        >
           mdi-bookmark-remove-outline
         </v-icon>
       </v-btn>
 
-      <v-btn v-else @click="bookmark" class="ml-n1" icon variant="text">
-        <v-icon color="white" class="shadow" :title="$t('griditem.bookmark.add')">
+      <v-btn
+        v-else
+        class="ml-n1"
+        icon
+        variant="text"
+        @click="bookmark"
+      >
+        <v-icon
+          color="white"
+          class="shadow"
+          :title="$t('griditem.bookmark.add')"
+        >
           mdi-bookmark-outline
         </v-icon>
       </v-btn>
@@ -53,16 +97,13 @@
 </template>
 
 <script setup>
-import ImageItemModal from '@/components/ImageItemModal.vue'
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 
 const props = defineProps({
   entry: Object,
 })
-
-const dialog = ref(false)
 
 const height = ref(200)
 const width = ref('auto')
@@ -106,6 +147,16 @@ const artist = computed(() => {
 </script>
 
 <style>
+.grid-item > .bookmark button {
+  opacity: 0;
+  box-shadow: none;
+}
+
+.grid-item > .bookmark button.clicked,
+.grid-item:hover > .bookmark button {
+  opacity: 1;
+}
+
 .grid-item {
   border-radius: 2px;
   position: relative;
@@ -132,15 +183,6 @@ const artist = computed(() => {
   top: 0;
 }
 
-.grid-item > .bookmark button {
-  opacity: 0;
-}
-
-.grid-item > .bookmark button.clicked,
-.grid-item:hover > .bookmark button {
-  opacity: 1;
-}
-
 .grid-item > img {
   transition: transform 0.5s ease;
   transform: scale(1.05);
@@ -151,23 +193,15 @@ const artist = computed(() => {
   opacity: 1;
 }
 
-.grid-item:hover > img {
-  transform: scale(1.4);
-}
-
-.grid-item:hover > .overlay {
-  opacity: 1;
-}
-
 .grid-item > .overlay {
-  background: linear-gradient(to top, black, #00000000 50%);
+  background: linear-gradient(to top, black, #0000 50%);
   transform: translate(-50%, -50%);
   transition: opacity 0.25s ease;
   position: absolute;
   object-fit: cover;
   min-width: 100%;
   max-width: 100%;
-  color: #ffffff;
+  color: #fff;
   height: 100%;
   opacity: 0;
   left: 50%;
@@ -196,6 +230,14 @@ const artist = computed(() => {
   font-weight: 400;
 }
 
+.grid-item:hover > img {
+  transform: scale(1.4);
+}
+
+.grid-item:hover > .overlay {
+  opacity: 1;
+}
+
 .flex-view {
   flex-grow: 1;
   display: flex;
@@ -204,26 +246,13 @@ const artist = computed(() => {
   transition: flex-basis 0.2s ease;
 }
 
-.flex-view:after {
+.flex-view::after {
   content: '';
   flex: auto;
 }
 
 .grid-item-fill {
   flex-grow: 150;
-}
-
-nav[role='navigation'] {
-  text-align: center;
-  width: 100%;
-}
-
-nav[role='navigation'] button {
-  box-shadow: none;
-}
-
-nav[role='navigation'] button:focus {
-  outline: none;
 }
 
 .theme--light.v-pagination .v-pagination__item--active.accent {

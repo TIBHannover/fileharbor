@@ -1,6 +1,5 @@
 <script setup>
-import { ref, watch, computed, defineModel } from 'vue'
-import { storeToRefs } from 'pinia'
+import { ref, defineModel } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSearchStore } from '@/stores/search'
 const { t } = useI18n()
@@ -61,8 +60,14 @@ function update() {
 <template>
   <v-navigation-drawer v-model="model">
     <div class="drawer">
-      <div v-for="(values, key, index) in weights" :key="index" :title="weights[key].name">
-        <div class="text-caption">{{ weights[key].name }}</div>
+      <div
+        v-for="(values, key, index) in weights"
+        :key="index"
+        :title="weights[key].name"
+      >
+        <div class="text-caption">
+          {{ weights[key].name }}
+        </div>
         <v-slider
           v-model="weights[key].value"
           min="0.0"
@@ -70,10 +75,10 @@ function update() {
           step="0.01"
           color="secondary"
           :prepend-icon="weights[key].icon"
-          @end="check(key)"
           hide-details
+          @end="check(key)"
         >
-          <template v-slot:append>
+          <template #append>
             <v-text-field
               v-model="weights[key].value"
               type="number"
@@ -81,17 +86,23 @@ function update() {
               class="mt-0 pt-0"
               background-color="grey lighten-4"
               style="width: 80px"
-              @change="check(key)"
               hide-details
               hide-spin-buttons
               flat
-            ></v-text-field>
+              @change="check(key)"
+            />
           </template>
         </v-slider>
       </div>
-      <v-btn color="secondary" class="update-button" @click="update">{{
-        t('modal.weights.update')
-      }}</v-btn>
+      <v-btn
+        color="secondary"
+        class="update-button"
+        @click="update"
+      >
+        {{
+          t('modal.weights.update')
+        }}
+      </v-btn>
     </div>
   </v-navigation-drawer>
 </template>
@@ -100,6 +111,7 @@ function update() {
 .drawer {
   margin: 5px;
 }
+
 .update-button {
   width: 100%;
   margin-top: 1em;
