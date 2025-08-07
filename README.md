@@ -2,85 +2,80 @@
 
 ![](images/iart-salvator.png)
 
-
 ## Overview
 
-The project iART is devoted to the development of an e-Research-tool for digitized, image-oriented research processes in the humanities and cultural sciences. It not only aims to improve the efficiency of retrieval in image databases but also offers various tools for analyzing image data, thereby enhancing scientific work and facilitating new theory formation. The motivation for the project stems from the fundamental importance of the comparative approach in art history, which targets the similarity of pictures and comes along with a rehabilitation of similarity thinking in contemporary philosophy of science. iART is supposed to transfer the approach of art history theorists and practitioners of Comparative Analysis to the digital age, and to extend it by virtue of modern information technology. 
-
+The project iART is devoted to the development of an e-Research-tool for digitized, image-oriented research processes in the humanities and cultural sciences. It not only aims to improve the efficiency of retrieval in image databases but also offers various tools for analyzing image data, thereby enhancing scientific work and facilitating new theory formation. The motivation for the project stems from the fundamental importance of the comparative approach in art history, which targets the similarity of pictures and comes along with a rehabilitation of similarity thinking in contemporary philosophy of science. iART is supposed to transfer the approach of art history theorists and practitioners of Comparative Analysis to the digital age, and to extend it by virtue of modern information technology.
 
 ## Installation
 
 At a later point there will be a docker container provided here.
 
-
 ## Development setup
 
-
 ### Requirements
-* [docker](https://docs.docker.com/get-docker/)
-* [docker-compose](https://docs.docker.com/compose/install/)
 
+- [docker](https://docs.docker.com/get-docker/)
+- [docker-compose](https://docs.docker.com/compose/install/)
 
 ### Setup process
+
 1. Clone the iART repository including submodules:
-    ```sh
-    git clone --recurse-submodules https://github.com/TIBHannover/iart.git
-    cd iart
-    ```
 
-2. Run `install.sh` to download and extract models:
-    ```sh
-    bash install.sh  # CPU
-    bash install.gpu.sh  # GPU
-    ```
+   ```sh
+   git clone https://github.com/TIBHannover/fileharbor.git
+   cd fileharbor
+   ```
 
-3. Build and start the container:
-    ```sh
-    sudo docker-compose up --build  # CPU
-    sudo docker-compose -f docker-compose.gpu.yml up --build  # GPU
-    ```
+2. Build and start the container:
 
-4. Apply database migrations and build frontend packages:
-    ```sh
-    sudo docker-compose exec backend python3 manage.py migrate auth
-    sudo docker-compose exec backend python3 manage.py migrate
-    sudo docker-compose exec frontend npm install --force
-    sudo docker-compose exec frontend npm run build
-    ```
+   ```sh
+   sudo docker-compose up --build  # CPU
+   ```
 
-5. For demonstration purposes, index `./data/examples/wikipedia_small.jsonl`: 
-    ```sh
-    sudo docker-compose exec indexer python -m iart_indexer --m client --task indexing --path /data/examples/wikipedia_small.jsonl --image_paths /data/media
-    ```
+3. Apply database migrations and build frontend packages:
 
-    Wait until the `docker-compose` process finishes indexing (this may take a few minutes). After that, an index must be created for faster searching and all existing images must be imported into the new index.
-    
-    ```sh
-    sudo docker-compose exec indexer python -m iart_indexer -m client --task faiss_train --port 50151  
-    ```
+   ```sh
+   docker compose exec backend uv run --package backend python3 backend/src/backend/manage.py migrate
+   cd frontend_vue3/
+   npm install
+   npm run dev
+   ```
 
-    ```sh
-    sudo docker-compose exec indexer python -m iart_indexer -m client --task faiss_indexing --port 50151 
-    ```
+4. For demonstration purposes, index `./data/examples/wikipedia_small.jsonl`:
 
-6. Go to the frontend instance at `http://localhost/`.
+   ```sh
+   sudo docker-compose exec indexer python -m iart_indexer --m client --task indexing --path /data/examples/wikipedia_small.jsonl --image_paths /data/media
+   ```
 
+   Wait until the `docker-compose` process finishes indexing (this may take a few minutes). After that, an index must be created for faster searching and all existing images must be imported into the new index.
+
+   ```sh
+   sudo docker-compose exec indexer python -m iart_indexer -m client --task faiss_train --port 50151
+   ```
+
+   ```sh
+   sudo docker-compose exec indexer python -m iart_indexer -m client --task faiss_indexing --port 50151
+   ```
+
+5. Go to the frontend instance at `http://localhost/`.
 
 ### Code reloading
+
 Hot reloading is enabled for `backend`. To display frontend changes, run:
+
 ```sh
 sudo docker-compose exec frontend npm run build
 ```
+
 Alternatively, use `serve` to enable a hot reloaded instance on `http://localhost:8080/`:
+
 ```sh
 sudo docker-compose exec frontend npm run serve
 ```
 
-
 ## About the project
 
 iART was funded by the [DFG](https://gepris.dfg.de/gepris/projekt/415796915) from 2019 to 2021. Our team consists of [Matthias Springstein](https://www.tib.eu/de/forschung-entwicklung/visual-analytics/mitarbeiterinnen-und-mitarbeiter/matthias-springstein/), [Stefanie Schneider](https://www.kunstgeschichte.uni-muenchen.de/personen/wiss_ma/schneider/index.html), [Javad Rahnama](https://www.hni.uni-paderborn.de/ism/mitarbeiter/155385986504753/), [Ralph Ewerth](https://www.tib.eu/de/forschung-entwicklung/visual-analytics/mitarbeiterinnen-und-mitarbeiter/ralph-ewerth/), [Hubertus Kohle](https://www.kunstgeschichte.uni-muenchen.de/personen/professoren_innen/kohle/index.html), and [Eyke Hüllermeier](https://www.hni.uni-paderborn.de/ism/mitarbeiter/112491383000284/).
-
 
 ## Contributing
 

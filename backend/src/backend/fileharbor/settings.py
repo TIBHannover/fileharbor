@@ -101,7 +101,7 @@ CACHES = {
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "fileharbor",
+        "NAME": "app",
         "USER": "postgres",
         "PASSWORD": "postgres",
         "HOST": "postgres",
