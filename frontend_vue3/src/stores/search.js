@@ -1,98 +1,43 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import axios from '../plugins/axios'
-
-import keyInObj from '@/composables/useKeyInObj'
+import axios from '@/plugins/axios'
 
 export const useSearchStore = defineStore('search', () => {
-  const resultList = ref([])
-  const isLoading = ref(false)
   const jobId = ref(null)
+  const entries = ref([])
+  const aggregations = ref([])
 
-  const queries = ref([])
-  const globalWeights = ref([])
-
-  function setGlobalWeights(newGlobalWeights) {
-    globalWeights.value = newGlobalWeights
+  function post() {
+    const params = { } // TODO
+    axios.post('/search', { params })
+      .then(({ data }) => {
+        if (data.job_id !== undefined) {
+          jobId.value = data.job_id
+          setTimeout(() => checkLoad, 500);
+        } else {
+          entries.value = data.entries
+          aggregations.value = data.aggregations
+        }
+      })
   }
 
-  function setQueries(newQueries) {
-    queries.value = newQueries
-  }
-
-  function search() {
-    console.log(queries)
-    let queriesWithWeights = queries.value.map((q) => {
-      if (keyInObj(q, 'weights')) {
-        return q
-      }
-      q.weights = globalWeights.value
-      return q
+  function checkPost({ commit, dispatch, state }) {
+    const params = { job_id: state.jobId }
+    axios.post('/search', { params })
+      .then(({ data }) => {
+        if (data.job_id !== undefined) {
+          jobId.value = data.job_id
+          setTimeout(() => checkLoad, 500);
+        } else {
+          entries.value = data.entries
+          aggregations.value = data.aggregations
+        }
     })
-
-    const params = {
-      queries: queriesWithWeights,
-    }
-    axios
-      .post('/search', { params })
-      .then(({ data }) => {
-        if (data.job_id !== undefined) {
-          jobId.value = data.job_id
-          isLoading.value = true
-        } else {
-          resultList.value = data.entries
-          isLoading.value = false
-          // commit('updateHits', data.entries);
-          // commit('updateCounts', data.aggregations);
-          // window.scrollTo(0, 0);
-          // const status = { loading: false, error: false, timestamp: new Date() };
-          // store.dispatch('utils/setStatus', status, { root: true });
-        }
-      })
-      .catch(function (error) {
-        jobId.value = null
-        isLoading.value = false
-        // handle error
-        console.log(error)
-      })
-  }
-
-  function fetchSearchResults() {
-    const params = { job_id: jobId.value }
-    console.log(JSON.stringify({ fetchSearchResults: true, jobid: jobId.value }))
-
-    axios
-      .post('/search', { params })
-      .then(({ data }) => {
-        if (data.job_id !== undefined) {
-          jobId.value = data.job_id
-          isLoading.value = true
-        } else {
-          resultList.value = data.entries
-          isLoading.value = false
-          // commit('updateHits', data.entries);
-          // commit('updateCounts', data.aggregations);
-          // window.scrollTo(0, 0);
-          // const status = { loading: false, error: false, timestamp: new Date() };
-          // store.dispatch('utils/setStatus', status, { root: true });
-        }
-      })
-      .catch(function (error) {
-        jobId.value = null
-        isLoading.value = false
-        // handle error
-        console.log(error)
-      })
   }
 
   return {
-    resultList,
-    isLoading,
-    jobId,
-    queries,
-    setGlobalWeights,
-    setQueries,
-    search,
-    fetchSearchResults,
+    entries,
+    aggregations,
+    post
   }
 })

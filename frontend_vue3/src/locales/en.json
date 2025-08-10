@@ -1,8 +1,40 @@
 {
   "search": {
-    "title": "Search"
-  },
-  "about": {
-    "title": "About"
+    "title": "Search",
+    "bar": {
+      "count": "No Search Results | {count} Search Result | {count} Search Results",
+      "order-by": {
+        "title": "Order By",
+        "relevance": "Relevance",
+        "creation-date": "Creation Date",
+        "object-title": "Object Title"
+      }
+    },
+    "dialog": {
+      "apply": "Apply",
+      "modality": {
+        "text": "Search with Text",
+        "images": "Search with Images"
+      }
+    },
+    "drawer": {
+      "count": "(No Filters) | ({count} Filter) | ({count} Filters)",
+      "apply": "Apply",
+      "field": {
+        "meta": {
+          "depicts": "Depicts",
+          "object_type": "Object Type",
+          "location": "Location",
+          "artist_name": "Creator",
+          "medium": "Medium",
+          "institution": "Institution",
+          "genre": "Genre",
+          "period": "Period"
+        },
+        "origin": {
+          "name": "Dataset"
+        }
+      }
+    }
   }
 }
