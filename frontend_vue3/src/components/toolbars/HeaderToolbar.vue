@@ -9,7 +9,7 @@
       <LogoTemplate />
     </v-toolbar-title>
 
-    <SearchDialog>
+    <SearchDialog modality="text">
       <template #activator>
         <v-btn
           class="ml-2"
@@ -21,7 +21,7 @@
       </template>
     </SearchDialog>
 
-    <SearchDialog>
+    <SearchDialog modality="images">
       <template #activator>
         <v-btn
           class="ml-2"

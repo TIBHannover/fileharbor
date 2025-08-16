@@ -7,29 +7,54 @@
       v-bind="activatorProps"
       class="grid-item"
       :disabled="isDisabled ? true : undefined"
+      @click="openDialog"
+      @keydown.enter.prevent="openDialog"
+      @keydown.space.prevent="openDialog"
     >
       <img
         :src="item.path"
-        alt=""
+        :alt="titles[0]"
+        loading="lazy"
+        decoding="async"
         @error="onError"
         @load="onLoad"
       >
 
       <v-fade-transition>
-        <v-container
+        <div
           v-if="isLoaded && isHovering"
           class="overlay"
         >
-          Test
-        </v-container>
+          <div class="overlay__content">
+            <div
+              class="overlay__title text-subtitle-1"
+              :title="titles[0]"
+            >
+              <b>{{ titles[0] }}</b>
+            </div>
+
+            <div
+              class="overlay__creators text-caption"
+              :title="creatorsLabel"
+            >
+              {{ creatorsLabel }}
+            </div>
+          </div>
+        </div>
       </v-fade-transition>
     </div>
   </v-hover>
+
+  <ResourceDialog
+    v-model="dialog"
+    :item="item"
+  />
 </template>
 
 <script setup>
-import { watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import useResource from '@/composables/useResource'
+import ResourceDialog from '@/components/dialogs/ResourceDialog.vue'
 
 const props = defineProps({
   item: {
@@ -40,8 +65,16 @@ const props = defineProps({
 
 const {
   isLoaded,
-  isDisabled
+  isDisabled,
+  onLoad,
+  onError,
+  titles,
+  creators
 } = useResource(props.item)
+
+const creatorsLabel = computed(() =>
+  Array.isArray(creators?.value) ? creators.value.join(', ') : ''
+)
 
 const emit = defineEmits(['disabled'])
 watch(isDisabled, (value) => {
@@ -49,23 +82,21 @@ watch(isDisabled, (value) => {
     emit('disabled', true)
   }
 })
+
+const dialog = ref(false)
+function openDialog() {
+  dialog.value = true
+}
 </script>
 
 <style scoped>
-.v-container {
-  position: absolute;
-  flex-direction: column;
+.overlay {
   display: flex;
-  width: 100%;
-  height: 100%;
-  bottom: 0;
-  left: 0;
-}
-
-.v-container .overlay {
+  flex-direction: column;
+  justify-content: flex-end;
+  position: absolute;
   background: linear-gradient(to top, black, #0000 40%);
   transform: translate(-50%, -50%);
-  position: absolute;
   object-fit: cover;
   min-width: 100%;
   max-width: 100%;
@@ -73,5 +104,17 @@ watch(isDisabled, (value) => {
   height: 100%;
   left: 50%;
   top: 50%;
+}
+
+.overlay__content {
+  padding: 16px;
+}
+
+.overlay__title,
+.overlay__creators {
+  text-overflow: ellipsis;
+  line-height: 1.25rem;
+  white-space: nowrap;
+  overflow: hidden;
 }
 </style>

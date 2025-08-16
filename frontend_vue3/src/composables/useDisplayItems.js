@@ -20,7 +20,7 @@ export default function useDisplayItems(store) {
 
   const itemsPerPage = computed(() => {
     const value = isRef(itemsPerPageRef) ? itemsPerPageRef.value : store?.itemsPerPage
-    return Number.isInteger(value) && value > 0 ? value : 24
+    return Number.isInteger(value) && value > 0 ? value : 96
   })
 
   const itemsPerRowMap = { xs: 1, sm: 2, md: 3, lg: 4, xl: 6, xxl: 6 }

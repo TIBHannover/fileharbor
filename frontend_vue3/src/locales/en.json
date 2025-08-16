@@ -13,8 +13,32 @@
     "dialog": {
       "apply": "Apply",
       "modality": {
+        "title": "Which search modality do you prefer?",
         "text": "Search with Text",
-        "images": "Search with Images"
+        "images": "Search with Images",
+        "iconclass": "Search with Iconclass"
+      },
+      "input": {
+        "title": "What would you like to search for?",
+        "text": "Enter text",
+        "images": "Upload an image",
+        "iconclass": "Search using Iconclass notations"
+      },
+      "similarity": {
+        "title": "What types of similarity are you interested in?",
+        "color": "Color",
+        "composition": "Composition",
+        "content": "Content",
+        "form": "Form",
+        "posture": "Posture",
+        "style": "Style"
+      },
+      "dataset": {
+        "title": "Which datasets would you like to use?",
+        "artigo": "ARTigo",
+        "kenom": "Kenom",
+        "wikidata": "Wikidata",
+        "other": "..."
       }
     },
     "drawer": {
@@ -22,18 +46,34 @@
       "apply": "Apply",
       "field": {
         "meta": {
-          "depicts": "Depicts",
-          "object_type": "Object Type",
-          "location": "Location",
           "artist_name": "Creator",
-          "medium": "Medium",
-          "institution": "Institution",
+          "depicts": "Depicts",
           "genre": "Genre",
-          "period": "Period"
+          "iconclass": "Iconclass",
+          "institution": "Institution",
+          "location": "Location",
+          "license": "License",
+          "medium": "Medium",
+          "movement": "Movement",
+          "object_type": "Object Type",
+          "period": "Period",
+          "title": "Title",
+          "url": "URL",
+          "wikidata": "Wikidata"
         },
         "origin": {
           "name": "Dataset"
         }
+      }
+    }
+  },
+  "resource": {
+    "apply": "Search for Similar Images",
+    "field": {
+      "meta": {
+        "title": "No Title",
+        "artist_name": "Unknown",
+        "year": "Unknown"
       }
     }
   }

@@ -61,7 +61,8 @@
           <v-virtual-scroll
             :items="record.entries"
             item-key="name"
-            height="250"
+            max-height="250"
+            item-height="28"
           >
             <template #default="{ item }">
               <v-list-item class="pa-0">
@@ -127,6 +128,7 @@ const selectedEntries = reactive({})
 
 const selectedFields = computed(() => new Set(Object.keys(selectedEntries)))
 const isSelectedField = (field) => selectedFields.value.has(field)
+
 const selectionCounts = computed(() => {
   const out = {}
   for (const k of Object.keys(selectedEntries)) {
