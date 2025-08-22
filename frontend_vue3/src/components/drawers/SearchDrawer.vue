@@ -9,15 +9,12 @@
       v-model="panel"
       variant="accordion"
       multiple
+      static
       flat
     >
-      <DatePanel />
-      <LocationPanel />
-
       <v-expansion-panel
         v-for="record in data"
         :key="record.field"
-        static
       >
         <v-expansion-panel-title>
           {{ $t(`search.drawer.field.${record.field}`) }}
@@ -58,33 +55,107 @@
         </v-expansion-panel-title>
 
         <v-expansion-panel-text>
-          <v-virtual-scroll
-            :items="record.entries"
-            item-key="name"
-            max-height="250"
-            item-height="28"
+          <HistogramPanel
+            v-if="record.field === 'meta.year_min'"
+            :data="record.entries"
+            @update-years="onUpdateYears"
           >
-            <template #default="{ item }">
-              <v-list-item class="pa-0">
-                <v-list-item-title>
-                  <v-checkbox
-                    :model-value="selectedEntries[record.field] ?? []"
-                    :value="item.name"
-                    density="compact"
-                    hide-details
-                    @update:model-value="val => (selectedEntries[record.field] = val)"
-                  >
-                    <template #label>
-                      <div class="text-body-2 ml-1">
-                        {{ item.name }}
-                        (<b>{{ item.count }}</b>)
-                      </div>
-                    </template>
-                  </v-checkbox>
-                </v-list-item-title>
-              </v-list-item>
-            </template>
-          </v-virtual-scroll>
+            <v-row class="mt-2">
+              <v-col>
+                <v-number-input
+                  :model-value="selectedEntries['meta.year_min']"
+                  :placeholder="String(Math.min(...years))"
+                  :min="Math.min(...years)"
+                  :max="Math.max(...years)"
+                  control-variant="stacked"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  clearable
+                  rounded
+                  inset
+                  @update:model-value="val => (selectedEntries['meta.year_min'] = val)"
+                >
+                  <template #clear>
+                    <v-icon size="14">
+                      mdi-close
+                    </v-icon>
+                  </template>
+                </v-number-input>
+              </v-col>
+
+              <v-col
+                cols="auto"
+                class="d-flex align-center px-0"
+              >
+                –
+              </v-col>
+
+              <v-col>
+                <v-number-input
+                  :model-value="selectedEntries['meta.year_max']"
+                  :placeholder="String(Math.max(...years))"
+                  :min="Math.min(...years)"
+                  :max="Math.max(...years)"
+                  control-variant="stacked"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  clearable
+                  rounded
+                  inset
+                  @update:model-value="val => (selectedEntries['meta.year_max'] = val)"
+                >
+                  <template #clear>
+                    <v-icon size="14">
+                      mdi-close
+                    </v-icon>
+                  </template>
+                </v-number-input>
+              </v-col>
+            </v-row>
+          </HistogramPanel>
+
+          <template v-else>
+            <MapPanel
+              v-if="record.field === 'meta.location'"
+              :data="record.entries"
+              class="mb-4"
+            />
+
+            <BarChartPanel
+              v-if="record.field === 'meta.depicts'"
+              :data="record.entries"
+            />
+
+            <v-virtual-scroll
+              :items="record.entries"
+              item-key="name"
+              max-height="250"
+              item-height="28"
+            >
+              <template #default="{ item }">
+                <v-list-item class="pa-0">
+                  <v-list-item-title>
+                    <v-checkbox
+                      :model-value="selectedEntries[record.field] ?? []"
+                      :value="item.name"
+                      density="compact"
+                      hide-details
+                      @update:model-value="val => (selectedEntries[record.field] = val)"
+                    >
+                      <template #label>
+                        <div class="text-body-2 ml-1">
+                          {{ item.name }}
+                          (<b>{{ item.count }}</b>)
+                        </div>
+                      </template>
+                    </v-checkbox>
+                  </v-list-item-title>
+                </v-list-item>
+              </template>
+            </v-virtual-scroll>
+          </template>
 
           <div
             v-show="isSelectedField(record.field)"
@@ -107,8 +178,9 @@
 
 <script setup>
 import { ref, computed, reactive, watch } from 'vue'
-import DatePanel from '@/components/panels/DatePanel.vue'
-import LocationPanel from '@/components/panels/LocationPanel.vue'
+import MapPanel from '@/components/panels/MapPanel.vue'
+import BarChartPanel from '@/components/panels/BarChartPanel.vue'
+import HistogramPanel from '@/components/panels/HistogramPanel.vue'
 
 defineProps({
   modelValue: {
@@ -124,32 +196,53 @@ defineProps({
 const emit = defineEmits(['apply'])
 
 const panel = ref([0])
+const years = ref([])
 const selectedEntries = reactive({})
 
 const selectedFields = computed(() => new Set(Object.keys(selectedEntries)))
 const isSelectedField = (field) => selectedFields.value.has(field)
 
 const selectionCounts = computed(() => {
-  const out = {}
-  for (const k of Object.keys(selectedEntries)) {
-    out[k] = (selectedEntries[k] || []).length
-  }
-  return out
+  const yearKeys = ["meta.year_min", "meta.year_max"]
+  const hasRange = yearKeys.every((k) =>
+    Object.prototype.hasOwnProperty.call(selectedEntries, k)
+  )
+
+  return Object.fromEntries(
+    Object.entries(selectedEntries)
+      .map(([k, v]) => {
+        if (Array.isArray(v)) return [k, v.length]
+        if (typeof v === "string") return [k, 1]
+
+        if (typeof v === "number") {
+          return [k, hasRange && yearKeys.includes(k) ? 2 : 1]
+        }
+
+        return [k, 0]
+      })
+  )
 })
 
-const countFieldSelections = (field) =>
-  selectedEntries[field].length
+const onUpdateYears = (values) => {
+  years.value = values
+}
 
 const onApply = () => {
-  // clone arrays to avoid exposing reactive refs
-  const payload = {}
-  for (const [k, v] of Object.entries(selectedEntries)) {
-    if (Array.isArray(v) && v.length) payload[k] = [...v]
-  }
+  const payload = Object.fromEntries(
+    Object.entries(selectedEntries)
+      .filter(([, v]) =>
+        Array.isArray(v) ? v.length > 0
+        : typeof v === "string" ? v.trim() !== ""
+        : typeof v === "number" ? Number.isFinite(v)
+        : typeof v === "boolean" ? true
+        : false
+      )
+      .map(([k, v]) => [k, Array.isArray(v) ? v.slice() : v])
+  )
   emit('apply', payload)
 }
 
-const clearField = field => {
+const clearField = (field) => {
   selectedEntries[field] = []
   onApply()
 }

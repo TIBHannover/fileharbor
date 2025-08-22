@@ -26,6 +26,7 @@
       rounded="circle"
       :length="Math.ceil(searchResults / itemsPerPage)"
       :total-visible="5"
+      :disabled="viewModeLocal === '2d'"
       @update:model-value="onPageClick"
     />
 
@@ -33,10 +34,11 @@
 
     <template #append>
       <v-select
-        v-model="orderBy"
+        v-model="orderByLocal"
         :items="orderOptions"
         item-title="value"
         item-value="key"
+        :disabled="viewModeLocal === '2d'"
         class="group-by text-body-3"
         variant="outlined"
         density="compact"
@@ -52,7 +54,7 @@
         <template #append>
           <v-btn
             density="compact"
-            :icon="sortOrder == 'asc' ? 'mdi-sort-ascending' : 'mdi-sort-descending'"
+            :icon="sortOrderLocal === 'asc' ? 'mdi-sort-ascending' : 'mdi-sort-descending'"
             color="grey"
             @click="onSortOrder"
           />
@@ -60,19 +62,36 @@
       </v-select>
 
       <v-menu open-on-hover>
-        <template #activator="{ props }">
+        <template #activator="{ props: menuProps }">
           <v-btn
             class="ml-1"
             icon="mdi-cog"
             density="compact"
             color="grey"
-            v-bind="props"
+            v-bind="menuProps"
           />
         </template>
 
-        <v-list>
-          <v-list-item>
-            TODO
+        <v-list
+          class="py-0"
+          selectable
+        >
+          <v-list-item
+            v-for="option in viewOptions"
+            :key="option.key"
+            @click="onViewMode(option.key)"
+          >
+            <template #prepend>
+              <v-icon
+                icon="mdi-check-circle"
+                :color="viewModeLocal === option.key ? 'black' : 'transparent'"
+                :style="{ opacity: 1 }"
+              />
+            </template>
+
+            <v-list-item-title>
+              {{ option.value }}
+            </v-list-item-title>
           </v-list-item>
         </v-list>
       </v-menu>
@@ -81,10 +100,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-defineProps({
+const props = defineProps({
   searchResults: {
     type: Number,
     default: 0
@@ -92,23 +111,36 @@ defineProps({
   itemsPerPage: {
     type: Number,
     default: 24
+  },
+  orderBy: {
+    type: String,
+    default: 'relevance'
+  },
+  sortOrder: {
+    type: String,
+    default: 'desc'
+  },
+  viewMode: {
+    type: String,
+    default: '1d'
   }
 })
 
-const { t } = useI18n({ useScope: 'global' })
 const emit = defineEmits([
   'applyPageChange',
   'applyGroupBy'  
 ])
 
+const { t } = useI18n({ useScope: 'global' })
+
 const page = ref(1)
+const orderByLocal = ref(props.orderBy)
+const sortOrderLocal = ref(props.sortOrder)
+const viewModeLocal = ref(props.viewMode)
 
 function onPageClick(newPage) {
   emit('applyPageChange', newPage)
 }
-
-const orderBy = ref('relevance')
-const sortOrder = ref('desc')
 
 const orderOptions = computed(() => ([
   { key: 'relevance',      value: t('search.bar.order-by.relevance') },
@@ -116,18 +148,32 @@ const orderOptions = computed(() => ([
   { key: 'object-title',   value: t('search.bar.order-by.object-title') }
 ]))
 
+const viewOptions = computed(() => ([
+  { key: '1d',             value: t('search.bar.view-mode.1d') },
+  { key: '2d',             value: t('search.bar.view-mode.2d') }
+]))
+
 const onSortOrder = () => {
-  sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  sortOrderLocal.value = sortOrderLocal.value === 'asc' ? 'desc' : 'asc'
   onApplyGroupBy()
 }
 
 const onApplyGroupBy = () => {
-  const payload = {
-    orderBy: orderBy.value,
-    sortOrder: sortOrder.value
-  }
-  emit('applyGroupBy', payload)
+  emit('applyGroupBy', {
+    orderBy: orderByLocal.value,
+    sortOrder: sortOrderLocal.value,
+    viewMode: viewModeLocal.value
+  })
 }
+
+const onViewMode = (value) => {
+  viewModeLocal.value = value
+  onApplyGroupBy()
+}
+
+watch(() => props.orderBy, (value) => orderByLocal.value = value)
+watch(() => props.sortOrder, (value) => sortOrderLocal.value = value)
+watch(() => props.viewMode, (value) => viewModeLocal.value = value)
 </script>
 
 <style scoped>

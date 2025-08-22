@@ -61,3 +61,12 @@ div {
 .v-slide-group__prev {
   justify-content: start;
 }
+
+.v-number-input input {
+  font-size: 0.875rem;
+  min-height: 39px;
+}
+
+.v-number-input .v-btn--disabled {
+  opacity: 0;
+}

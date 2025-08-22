@@ -8,6 +8,10 @@
         "relevance": "Relevance",
         "creation-date": "Creation Date",
         "object-title": "Object Title"
+      },
+      "view-mode": {
+        "1d": "1D List View",
+        "2d": "2D Canvas View"
       }
     },
     "dialog": {
@@ -59,7 +63,8 @@
           "period": "Period",
           "title": "Title",
           "url": "URL",
-          "wikidata": "Wikidata"
+          "wikidata": "Wikidata",
+          "year_min": "Creation Date"
         },
         "origin": {
           "name": "Dataset"
@@ -76,5 +81,8 @@
         "year": "Unknown"
       }
     }
+  },
+  "general": {
+    "objects": "0 Objects | {count} Object | {count} Objects"
   }
 }

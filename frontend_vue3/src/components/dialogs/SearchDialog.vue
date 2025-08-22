@@ -217,9 +217,9 @@
               :label="option.value"
               class="mx-0 mt-1"
               :disabled="!isSimilaritySelected(option.key)"
-              min="0"
+              :min="0"
               :max="maxValue"
-              step="1"
+              :step="1"
               density="compact"
               thumb-size="16"
               elevation="0"
@@ -227,18 +227,19 @@
               @end="onSimilarityInput(option.key, $event)"
             >
               <template #append>
-                <v-text-field
-                  class="number"
-                  style="width: 85px;"
+                <v-number-input
+                  class="ml-1"
+                  style="width: 90px;"
                   :disabled="!isSimilaritySelected(option.key)"
-                  type="number"
-                  min="0"
+                  :min="0"
                   :max="maxValue"
-                  step="1"
+                  :step="1"
+                  control-variant="stacked"
                   variant="outlined"
                   density="compact"
                   hide-details
                   rounded
+                  inset
                   :model-value="similarityValues[option.key]"
                   @end="onSimilarityInput(option.key, $event)"
                 />

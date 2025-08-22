@@ -5,43 +5,35 @@
     @apply="onFilter"
   />
 
-  <v-main>
-    <div :class="drawer ? 'mx-4 mb-3' : 'mx-3 mb-3'">
+  <v-main class="w-100">
+    <div :class="['mb-3', drawer ? 'px-4' : 'px-3']">
       <SearchToolbar
         :key="toolbarKey"
         :search-results="entries.length || 0"
         :items-per-page="itemsPerPage"
+        :order-by="grouping.orderBy"
+        :sort-order="grouping.sortOrder"
+        :view-mode="grouping.viewMode"
         @apply-group-by="onGroupBy"
         @apply-page-change="onPageChange"
       />
 
       <v-container
         class="overflow-y-auto"
-        style="max-height: calc(100vh - (64px + 56px + 20px));"
+        style="height: calc(100vh - 140px);"
         fluid
       >
-        <v-data-iterator
-          :items="paginatedEntries"
+        <ListIterator
+          v-if="grouping.viewMode === '1d'"
+          :entries="paginatedEntries"
           :items-per-page="itemsPerPage"
-          hide-default-footer
-        >
-          <template #default="{ items }">
-            <v-row>
-              <v-col
-                v-for="item in items"
-                :key="item.raw.id"
-                :cols="(12 / itemsPerRow)"
-                class="pt-0 pb-2 px-1"
-              >
-                <SearchCard :item="item.raw" />
-              </v-col>
-            </v-row>
-          </template>
+          :items-per-row="itemsPerRow"
+        />
 
-          <template #no-data>
-            <!-- TODO: empty state -->
-          </template>
-        </v-data-iterator>
+        <CanvasIterator
+          v-if="grouping.viewMode === '2d'"
+          :entries="entries"
+        />
       </v-container>
     </div>
   </v-main>
@@ -52,9 +44,10 @@ import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useSearchStore } from '@/stores/search'
 import useDisplayItems from '@/composables/useDisplayItems'
-import SearchCard from '@/components/cards/SearchCard.vue'
 import SearchDrawer from '@/components/drawers/SearchDrawer.vue'
 import SearchToolbar from '@/components/toolbars/SearchToolbar.vue'
+import ListIterator from '@/components/iterators/ListIterator.vue'
+import CanvasIterator from '@/components/iterators/CanvasIterator.vue'
 
 defineProps({
   drawer: {
@@ -67,14 +60,14 @@ const search = useSearchStore()
 const { entries, aggregations } = storeToRefs(search)
 const { itemsPerPage, itemsPerRow } = useDisplayItems('search')
 
+const page = ref(1)
+
 const onFilter = (payload) => {
   // TODO: add params
   console.log(payload)
   search.post()
   page.value = 1
 }
-
-const page = ref(1)
 
 const onPageChange = (newPage) => {
   page.value = newPage
@@ -93,14 +86,16 @@ const paginatedEntries = computed(() => {
 
 const grouping = ref({
   orderBy: 'relevance',
-  sortOrder: 'desc'
+  sortOrder: 'desc',
+  viewMode: '2d'
 })
 
 const onGroupBy = (payload) => {
   console.log(payload)
   grouping.value = {
     orderBy: payload.orderBy ?? 'relevance',
-    sortOrder: payload.sortOrder ?? 'desc'
+    sortOrder: payload.sortOrder ?? 'desc',
+    viewMode: payload.viewMode ?? '1d'
   }
 }
 
