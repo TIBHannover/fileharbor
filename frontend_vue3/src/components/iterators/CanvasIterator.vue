@@ -10,12 +10,6 @@
         :height="observedHeight"
       >
         <g ref="gEl">
-          <rect
-            class="bg"
-            :width="observedWidth"
-            :height="observedHeight"
-          />
-
           <g
             ref="imagesEl"
             class="images"
@@ -26,10 +20,17 @@
   </div>
 
   <slot />
+
+  <ResourceDialog
+    v-if="selectedItem"
+    v-model="dialog"
+    :item="selectedItem"
+  />
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, ref, computed, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, computed, watchEffect } from 'vue'
+import ResourceDialog from '@/components/dialogs/ResourceDialog.vue'
 import * as d3 from 'd3'
 
 const props = defineProps({
@@ -47,11 +48,10 @@ const props = defineProps({
   },
   pointSize: {
     type: Number,
-    default: 16
+    default: 8
   }
 })
 
-let xScale, yScale
 let resizeObserver = null
 
 const root = ref(null)
@@ -60,122 +60,118 @@ const svgEl = ref(null)
 const imagesEl = ref(null)
 
 const observedWidth = ref(0)
-const observedHeight = ref(200)
+const observedHeight = ref(0)
 
 const items = computed(() => {
   const arr = []
-  for (const d of (props.entries)) {
+  for (const d of props.entries) {
     const coords = d?.coordinates
-    if (!Array.isArray(coords) || coords.length < 2) continue
-    const x = Number(coords[0])
-    const y = Number(coords[1])
-    if (!Number.isFinite(x) || !Number.isFinite(y)) continue
-
-    const img = (props.imgPref === 'preview' ? d?.preview : d?.path) ?? d?.preview ?? d?.path
-    if (!img) continue
-
     arr.push({
-      id: d.id,
-      x, y,
-      img,
-      raw: d
+      x: Number(coords[0]),
+      y: Number(coords[1]),
+      ...d
     })
   }
   return arr
 })
 
-function onItemselect() {
-  
+const selectedItem = ref(null)
+const dialog = ref(false)
+function onItemSelect(item) {
+  selectedItem.value = item
+  dialog.value = true
 }
 
-function render() {
-  xScale = d3.scaleLinear()
-    .domain(d3.extent(items.value, d => d.x))
-    .range([0, observedWidth.value])
+function render(width, height, data) {
+  const xScale = d3.scaleLinear()
+    .domain(d3.extent(data, d => d.x))
+    .range([0, width])
 
-  yScale = d3.scaleLinear()
-    .domain(d3.extent(items.value, d => d.y))
-    .range([0, observedHeight.value])
+  const yScale = d3.scaleLinear()
+    .domain(d3.extent(data, d => d.y))
+    .range([0, height])
 
   const sel = d3.select(imagesEl.value)
     .selectAll('image')
-    .data(items.value, d => d.id)
+    .data(data, d => d.id)
 
-  const enter = sel.enter().append('image')
-    .attr('href', d => d.img)
-    .attr('clip-path', 'url(#round)')
-    .attr('width', props.pointSize * 2)
-    .attr('height', props.pointSize * 2)
-    .attr('x', d => xScale(d.x) - props.pointSize)
-    .attr('y', d => yScale(d.y) - props.pointSize)
-    .style('cursor', 'pointer')
-    .on('click', (event, d) => {
-      const node = d3.select(event.currentTarget)
-      node.transition().duration(300)
-        .attr('width', props.pointSize * 2.4)
-        .attr('height', props.pointSize * 2.4)
-        .attr('x', xScale(d.x) - props.pointSize * 1.2)
-        .attr('y', yScale(d.y) - props.pointSize * 1.2)
-        .transition().duration(300)
-        .attr('width', props.pointSize * 2)
-        .attr('height', props.pointSize * 2)
-        .attr('x', xScale(d.x) - props.pointSize)
-        .attr('y', yScale(d.y) - props.pointSize)
+  sel.join(
+    enter => enter.append('image')
+      .attr('href', d => d.preview)
+      .attr('width', props.pointSize * 2)
+      .attr('height', props.pointSize * 2)
+      .attr('x', d => xScale(d.x) - props.pointSize)
+      .attr('y', d => yScale(d.y) - props.pointSize)
+      .style('cursor', 'pointer')
+      .on('click', (event, d) => {
+        const node = d3.select(event.currentTarget)
+        node.transition().duration(300)
+          .attr('width', props.pointSize * 2.4)
+          .attr('height', props.pointSize * 2.4)
+          .transition().duration(300)
+          .attr('width', props.pointSize * 2)
+          .attr('height', props.pointSize * 2)
 
-      onItemselect(d.raw)
+        onItemSelect(d)
+      }),
+    update => update
+      .attr('width', props.pointSize * 2)
+      .attr('height', props.pointSize * 2)
+      .attr('x', d => xScale(d.x) - props.pointSize)
+      .attr('y', d => yScale(d.y) - props.pointSize),
+    exit => exit.remove()
+  )
+}
+
+function initZoom() {
+  const zoomBehavior = d3.zoom()
+    .scaleExtent([0.75, 10])
+    .on("zoom", (event) => {
+      d3.select(gEl.value).attr("transform", event.transform)
     })
-
-  enter.merge(sel)
-    .attr('width', props.pointSize * 2)
-    .attr('height', props.pointSize * 2)
-    .attr('x', d => xScale(d.x) - props.pointSize)
-    .attr('y', d => yScale(d.y) - props.pointSize)
-
-  sel.exit().remove()
+  d3.select(svgEl.value).call(zoomBehavior)
 }
 
 onMounted(() => {
-  if ((props.width == null || props.height == null) && root.value) {
-    resizeObserver = new ResizeObserver(entries => {
-      for (const { contentRect } of entries) {
-        const w = Math.floor(contentRect.width || 0)
-        const h = Math.floor(contentRect.height || 0)
-        let changed = false
+  if (props.width != null) observedWidth.value = props.width
+  if (props.height != null) observedHeight.value = props.height
 
+  if ((props.width == null || props.height == null) && root.value) {
+    let raf = 0
+    resizeObserver = new ResizeObserver(entries => {
+      const { contentRect } = entries[0] ?? {}
+      if (!contentRect) return
+      const w = Math.floor(contentRect.width || 0)
+      const h = Math.floor(contentRect.height || 0)
+
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => {
         if (props.width == null && w > 0 && w !== observedWidth.value) {
           observedWidth.value = w
-          changed = true
         }
         if (props.height == null && h > 0 && h !== observedHeight.value) {
           observedHeight.value = h
-          changed = true
         }
-        if (changed) render()
-      }
+      })
     })
     resizeObserver.observe(root.value)
-  } else {
-    if (props.width != null) observedWidth.value = props.width
-    if (props.height != null) observedHeight.value = props.height
-    render()
   }
+
+  initZoom()
 })
 
 onBeforeUnmount(() => {
-  if (resizeObserver && root.value) {
-    resizeObserver.unobserve(root.value)
+  if (resizeObserver) {
+    resizeObserver.disconnect?.()
+    resizeObserver = null
   }
-  resizeObserver = null
 })
 
-watch(items, () => {
-  render()
+watchEffect(() => {
+  const w = props.width ?? observedWidth.value
+  const h = props.height ?? observedHeight.value
+  render(w, h, items.value)
 })
-
-watch(
-  () => [items, props.height, props.width],
-  () => render(),
-)
 </script>
 
 <style scoped>
@@ -188,9 +184,6 @@ watch(
 .canvas {
   width: 100%;
   height: 100%;
-}
-
-.bg {
-  fill: rgba(217 217 217 / 30%);
+  background: rgba(217 217 217 / 30%);
 }
 </style>

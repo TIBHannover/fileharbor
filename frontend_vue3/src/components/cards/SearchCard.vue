@@ -117,4 +117,33 @@ function openDialog() {
   white-space: nowrap;
   overflow: hidden;
 }
+
+.grid-item {
+  border-radius: 28px;
+  position: relative;
+  overflow: hidden;
+  min-width: 80px;
+  cursor: pointer;
+  display: block;
+  height: 225px;
+  flex-grow: 1;
+}
+
+.grid-item[disabled] {
+  display: none;
+}
+
+.grid-item > img {
+  transition: transform 0.5s ease;
+  transform: scale(1.05);
+  object-position: top;
+  object-fit: cover;
+  min-width: 100%;
+  max-width: 100%;
+  height: 100%;
+}
+
+.grid-item:hover > img {
+  transform: scale(1.3);
+}
 </style>

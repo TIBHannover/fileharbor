@@ -60,7 +60,7 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, ref, computed, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, computed, watchEffect, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as d3 from 'd3'
 
@@ -145,23 +145,20 @@ const binned = computed(() => {
   return out
 })
 
-function render() {
-  const data = binned.value
-  if (!data.length) return
-
+function render(width, height, data) {
   xScale = d3.scaleBand()
     .domain(data.map(b => b.start))
-    .range([0, observedWidth.value])
+    .range([0, width])
     .paddingInner(0.05)
     .paddingOuter(0)
 
   yScale = d3.scaleLinear()
     .domain([0, d3.max(data, d => d.sum) || 1])
     .nice()
-    .range([innerH.value, 0])
+    .range([height, 0])
     .clamp(true)
 
-  centers = data.map(d => (xScale(d.start) ?? 0) + xScale.bandwidth() / 2)
+  centers = data.map(d => xScale(d.start) + xScale.bandwidth() / 2)
 
   const g = d3.select(barsEl.value)
     .selectAll('g.bar')
@@ -282,7 +279,6 @@ function onMove(evt) {
   }
 
   tooltip.attr('transform', `translate(${tx},${ty})`)
-
   g.style('visibility', 'visible')
 }
 
@@ -295,34 +291,37 @@ function onLeave() {
 }
 
 onMounted(() => {
+  if (props.width != null) observedWidth.value = props.width
+
   if (props.width == null && root.value) {
+    let raf = 0
     resizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        const w = Math.floor(entry.contentRect.width || 0)
-        if (w > 0 && w !== observedWidth.value) {
+      const { contentRect } = entries[0] ?? {}
+      if (!contentRect) return
+      const w = Math.floor(contentRect.width || 0)
+
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => {
+        if (props.width == null && w > 0 && w !== observedWidth.value) {
           observedWidth.value = w
-          render()
         }
-      }
+      })
     })
     resizeObserver.observe(root.value)
-  } else {
-    observedWidth.value = props.width
-    render()
   }
 })
 
 onBeforeUnmount(() => {
-  if (resizeObserver && root.value) {
-    resizeObserver.unobserve(root.value)
+  if (resizeObserver) {
+    resizeObserver.disconnect?.()
+    resizeObserver = null
   }
-  resizeObserver = null
 })
 
-watch(
-  () => [binned, props.height, props.width],
-  () => render(),
-)
+watchEffect(() => {
+  const w = props.width ?? observedWidth.value
+  render(w, innerH.value, binned.value)
+})
 </script>
 
 <style scoped>

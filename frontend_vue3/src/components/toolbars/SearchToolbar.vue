@@ -159,11 +159,12 @@ const onSortOrder = () => {
 }
 
 const onApplyGroupBy = () => {
-  emit('applyGroupBy', {
+  const payload = {
     orderBy: orderByLocal.value,
     sortOrder: sortOrderLocal.value,
     viewMode: viewModeLocal.value
-  })
+  }
+  emit('applyGroupBy', payload)
 }
 
 const onViewMode = (value) => {

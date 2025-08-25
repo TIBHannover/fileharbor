@@ -441,7 +441,7 @@ const onApply = () => {
     payload.query = inputIconclass.value?.trim() || ''
   }
 
-  console.log(payload)
+  search.removeFilters()
   search.post(payload)
   dialog.value = false
 }

@@ -63,8 +63,7 @@ const { itemsPerPage, itemsPerRow } = useDisplayItems('search')
 const page = ref(1)
 
 const onFilter = (payload) => {
-  // TODO: add params
-  console.log(payload)
+  search.setFilters(payload)
   search.post()
   page.value = 1
 }
@@ -87,11 +86,10 @@ const paginatedEntries = computed(() => {
 const grouping = ref({
   orderBy: 'relevance',
   sortOrder: 'desc',
-  viewMode: '2d'
+  viewMode: '1d'
 })
 
 const onGroupBy = (payload) => {
-  console.log(payload)
   grouping.value = {
     orderBy: payload.orderBy ?? 'relevance',
     sortOrder: payload.sortOrder ?? 'desc',

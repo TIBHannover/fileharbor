@@ -228,17 +228,19 @@ const onUpdateYears = (values) => {
 }
 
 const onApply = () => {
-  const payload = Object.fromEntries(
-    Object.entries(selectedEntries)
-      .filter(([, v]) =>
-        Array.isArray(v) ? v.length > 0
-        : typeof v === "string" ? v.trim() !== ""
-        : typeof v === "number" ? Number.isFinite(v)
-        : typeof v === "boolean" ? true
-        : false
-      )
-      .map(([k, v]) => [k, Array.isArray(v) ? v.slice() : v])
-  )
+  const payload = Object.entries(selectedEntries)
+    .filter(([, v]) =>
+      Array.isArray(v) ? v.length > 0
+      : typeof v === "string" ? v.trim() !== ""
+      : typeof v === "number" ? Number.isFinite(v)
+      : typeof v === "boolean" ? true
+      : false
+    )
+    .map(([k, v]) => ({
+      field: k,
+      name: Array.isArray(v) ? v.slice() : v
+    }))
+
   emit('apply', payload)
 }
 

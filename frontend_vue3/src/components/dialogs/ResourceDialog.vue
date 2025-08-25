@@ -35,7 +35,7 @@
                     v-for="name in names"
                     :key="name"
                     class="mr-1 mb-1"
-                    @click="onFilter(field, name)"
+                    @click="onFilter(`meta.${field}`, name)"
                   >
                     {{ name }}
                   </v-chip>
@@ -160,15 +160,19 @@ const formattedYears = computed(() => {
 })
 
 const onFilter = (field, name) => {
-  // TODO: or traverse to parent?
-  const payload = { field, name }
-  search.post(payload)
+  const payload = [{ field, name: [name] }]
+  search.setFilters(payload)
+  search.post()
   close()
 }
 
 const onApply = () => {
-  // TODO: or traverse to parent?
-  search.post()
+  const payload = {
+    modality: 'images',
+    query: { value: props.item.id }
+  }
+  search.removeFilters()
+  search.post(payload)
   close()
 }
 </script>
