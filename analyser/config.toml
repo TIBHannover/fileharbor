@@ -55,7 +55,7 @@ grpc.port = 50151
 grpc.host = "localhost"
 
 # Clip SigLIP 2
-
+## Index
 [[index.indexing_plugin]]
 index_name = "clip_image_siglib2"
 compute_plugin = "clip_image_vit-b-32_siglip2-256"
@@ -68,7 +68,7 @@ compute_plugin = "clip_text_vit-b-32_siglip2-256"
 input_mapping = { "*" = "text" }
 fields = ["meta/*"]
 
-
+## Search
 [[index.search_plugin]]
 index_name = "clip_image_siglib2"
 compute_plugin = "clip_image_vit-b-32_siglip2-256"
@@ -77,6 +77,12 @@ fields = ["image"]
 
 [[index.search_plugin]]
 index_name = "clip_text_siglib2"
+compute_plugin = "clip_text_vit-b-32_siglip2-256"
+input_mapping = { "*" = "text" }
+fields = ["text"]
+
+[[index.search_plugin]]
+index_name = "clip_image_siglib2"
 compute_plugin = "clip_text_vit-b-32_siglip2-256"
 input_mapping = { "*" = "text" }
 fields = ["text"]

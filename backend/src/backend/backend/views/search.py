@@ -20,7 +20,7 @@ from backend.utils import (
 )
 
 
-from interface import analyser_pb2, analyser_pb2_grpc
+from interface import searcher_pb2, searcher_pb2_grpc
 from interface.utils import (
     meta_from_proto,
     classifier_from_proto,
@@ -28,21 +28,26 @@ from interface.utils import (
     suggestions_from_proto,
 )
 
-from google.protobuf.json_format import MessageToJson
+from google.protobuf.json_format import MessageToJson, MessageToDict, ParseDict
 
 logger = logging.getLogger(__name__)
 
 
 class Search(RPCView):
     def parse_search_request(self, params, ids=None, collection_ids=None):
-        grpc_request = analyser_pb2.SearchRequest()
+        grpc_request = searcher_pb2.SearchRequest()
 
-        print(params, flush=True)
+        print(f"Search params: {params}", flush=True)
 
-        weights = {"clip_embedding_feature": 1}
-        cluster = {"type": "kmeans", "n": 1}
-        lang = params.get("lang", "en")
+        # Stefanie
 
+        if params.get("query") and params.get("modality"):
+            params.setdefault("queries", [])
+            params["queries"].append(
+                {"type": params.get("modality"), "value": params.get("query")}
+            )
+
+        print(f"Search params 2: {params}", flush=True)
         # if params.get("settings"):
         #     settings = params["settings"]
 
@@ -50,7 +55,7 @@ class Search(RPCView):
         #         layout = settings["layout"]
 
         #         if layout.get("viewType") == "umap":
-        #             grpc_request.mapping = analyser_pb2.SearchRequest.MAPPING_UMAP
+        #             grpc_request.mapping = searcher_pb2.SearchRequest.MAPPING_UMAP
 
         #             if layout.get("viewGrid", False):
         #                 option = grpc_request.mapping_options.add()
@@ -74,12 +79,12 @@ class Search(RPCView):
         # if cluster.get("n", 1) > 1:
         #     if cluster.get("type") == "agglomerative":
         #         grpc_request.clustering = (
-        #             analyser_pb2.SearchRequest.CLUSTERING_AGGLOMERATIVE
+        #             searcher_pb2.SearchRequest.CLUSTERING_AGGLOMERATIVE
         #         )
         #     elif cluster.get("type") == "kmeans":
-        #         grpc_request.clustering = analyser_pb2.SearchRequest.CLUSTERING_KMEANS
+        #         grpc_request.clustering = searcher_pb2.SearchRequest.CLUSTERING_KMEANS
         #     else:
-        #         grpc_request.clustering = analyser_pb2.SearchRequest.CLUSTERING_GM
+        #         grpc_request.clustering = searcher_pb2.SearchRequest.CLUSTERING_GM
 
         #     option = grpc_request.clustering_options.add()
         #     option.key = "k"
@@ -104,9 +109,9 @@ class Search(RPCView):
         #         term.text.query = t["name"]
 
         #         if t.get("positive", True):
-        #             term.text.flag = analyser_pb2.NumberSearchTerm.SHOULD
+        #             term.text.flag = searcher_pb2.NumberSearchTerm.SHOULD
         #         else:
-        #             term.text.flag = analyser_pb2.NumberSearchTerm.NOT
+        #             term.text.flag = searcher_pb2.NumberSearchTerm.NOT
 
         # print(f"Search Collections: {user_collection_ids} {collection_ids}", flush=True)
         # if user_collection_ids:
@@ -135,14 +140,14 @@ class Search(RPCView):
         #         term = grpc_request.terms.add()
         #         term.number.field = "meta.yaer_max"
         #         term.number.int_query = max(date_range)
-        #         term.number.flag = analyser_pb2.NumberSearchTerm.MUST
-        #         term.number.relation = analyser_pb2.NumberSearchTerm.LESS_EQ
+        #         term.number.flag = searcher_pb2.NumberSearchTerm.MUST
+        #         term.number.relation = searcher_pb2.NumberSearchTerm.LESS_EQ
 
         #     term = grpc_request.terms.add()
         #     term.number.field = "meta.year_min"
         #     term.number.int_query = min(date_range)
-        #     term.number.flag = analyser_pb2.NumberSearchTerm.MUST
-        #     term.number.relation = analyser_pb2.NumberSearchTerm.GREATER_EQ
+        #     term.number.flag = searcher_pb2.NumberSearchTerm.MUST
+        #     term.number.relation = searcher_pb2.NumberSearchTerm.GREATER_EQ
 
         # for field_name in params.get("aggregate", []):
         #     grpc_request.aggregate.fields.extend([field_name])
@@ -161,31 +166,30 @@ class Search(RPCView):
         # if ids is not None:
         #     grpc_request.ids.extend(ids)
 
-        if params.get("queries"):
-            for q in params["queries"]:
-                if q.get("type") == "txt":
-                    term = grpc_request.terms.add()
-                    term.vector.analyse.plugin = "ClipTextEmbeddingFeature"
-                    input_field = term.vector.analyse.inputs.add()
-                    input_field.name = "text"
-                    input_field.string.text = q["value"]
+        for q in params.get("queries", []):
+            print(f"q {q}", flush=True)
+            if q.get("type") == "text":
+                term = grpc_request.terms.add()
+                input_field = term.vector.inputs.add()
+                input_field.name = "text"
+                input_field.text.text = q["value"]
 
-                    for weight in q.get("weights", DjangoSettings.DEFAULT_INDEXES):
-                        plugin_vector_search_index = term.vector.vector_indexes.add()
-                        plugin_vector_search_index.name = weight.get("name", "")
-                        plugin_vector_search_index.weight = weight.get("value", 0.0)
+                # for weight in q.get("weights", DjangoSettings.DEFAULT_INDEXES):
+                #     plugin_vector_search_index = term.vector.vector_indexes.add()
+                #     plugin_vector_search_index.name = weight.get("name", "")
+                #     plugin_vector_search_index.weight = weight.get("value", 0.0)
 
-                    # term.vector.vector_indexes.extend(["clip_text", "clip_image"])
+                # term.vector.vector_indexes.extend(["clip_text", "clip_image"])
 
-                    # plugins = term.image_text.plugins.add()
-                    # plugins.name = "clip_embedding_feature"
-                    # plugins.weight = 1.0
-                    # TODO: plugins.lang = lang
+                # plugins = term.image_text.plugins.add()
+                # plugins.name = "clip_embedding_feature"
+                # plugins.weight = 1.0
+                # TODO: plugins.lang = lang
 
-                    # if q.get("positive", True):
-                    #     term.image_text.flag = analyser_pb2.ImageTextSearchTerm.POSITIVE
-                    # else:
-                    #     term.image_text.flag = analyser_pb2.ImageTextSearchTerm.NEGATIVE
+                # if q.get("positive", True):
+                #     term.image_text.flag = searcher_pb2.ImageTextSearchTerm.POSITIVE
+                # else:
+                #     term.image_text.flag = searcher_pb2.ImageTextSearchTerm.NEGATIVE
 
                 # elif q.get("type") == "idx":
                 #     term = grpc_request.terms.add()
@@ -240,16 +244,16 @@ class Search(RPCView):
                 #             plugins.weight = v
 
                 #     if q.get("positive", True):
-                #         term.feature.flag = analyser_pb2.ImageTextSearchTerm.POSITIVE
+                #         term.feature.flag = searcher_pb2.ImageTextSearchTerm.POSITIVE
                 #     else:
-                #         term.feature.flag = analyser_pb2.ImageTextSearchTerm.NEGATIVE
+                #         term.feature.flag = searcher_pb2.ImageTextSearchTerm.NEGATIVE
 
-                grpc_request.sorting = analyser_pb2.SearchRequest.SORTING_FEATURE
+                grpc_request.sorting = searcher_pb2.SearchRequest.SORTING_FEATURE
 
         # if params.get("random") and isinstance(params["random"], (int, float, str)):
-        #     grpc_request.sorting = analyser_pb2.SearchRequest.SORTING_RANDOM_FEATURE
+        #     grpc_request.sorting = searcher_pb2.SearchRequest.SORTING_RANDOM_FEATURE
         #     grpc_request.random_seed = str(params["random"])
-
+        print(f"grpc_request {grpc_request}", flush=True)
         return grpc_request
 
     def rpc_load(self, params, ids=None, collection_ids=None, user=None):
@@ -285,7 +289,7 @@ class Search(RPCView):
         if response_cache is not None:
             return msgpack.unpackb(response_cache)
 
-        stub = analyser_pb2_grpc.IndexerStub(self.channel)
+        stub = searcher_pb2_grpc.SearcherStub(self.channel)
         response = stub.search(grpc_request)
         try:
             cache.set(response.id, grpc_request_hash)
@@ -295,8 +299,8 @@ class Search(RPCView):
         return {"job_id": response.id}
 
     def rpc_check_load(self, job_id, collections=None):
-        stub = analyser_pb2_grpc.IndexerStub(self.channel)
-        request = analyser_pb2.ListSearchResultRequest(id=job_id)
+        stub = searcher_pb2_grpc.SearcherStub(self.channel)
+        request = searcher_pb2.ListSearchResultRequest(id=job_id)
 
         try:
             response = stub.list_search_result(request)
@@ -321,19 +325,19 @@ class Search(RPCView):
                     "padded": e.padded,
                 }
 
-                entry["collection"] = {
-                    "id": e.collection.id,
-                    "name": e.collection.name,
-                    "is_public": e.collection.is_public,
-                    "user": e.collection.id in collection_ids,
-                }
+                # entry["collection"] = {
+                #     "id": e.collection.id,
+                #     "name": e.collection.name,
+                #     "is_public": e.collection.is_public,
+                #     "user": e.collection.id in collection_ids,
+                # }
 
-                if e.collection.id in collection_ids:
-                    entry["path"] = upload_url_to_image(e.id)
-                    entry["preview"] = upload_url_to_image(e.id)
-                else:
-                    entry["path"] = media_url_to_image(e.id)
-                    entry["preview"] = media_url_to_preview(e.id)
+                # if e.collection.id in collection_ids:
+                #     entry["path"] = upload_url_to_image(e.id)
+                #     entry["preview"] = upload_url_to_image(e.id)
+                # else:
+                entry["path"] = media_url_to_image(e.id)
+                entry["preview"] = media_url_to_preview(e.id)
 
                 entries.append(entry)
 

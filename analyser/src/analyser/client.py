@@ -6,10 +6,11 @@ import grpc
 import json
 import shutil
 import struct
-import msgpack
 import logging
-import imageio
+import mimetypes
+import imageio.v3 as iio
 import functools
+from analyser.utils import flat_dict
 
 from typing import Dict
 
@@ -35,7 +36,8 @@ from analyser.utils import image_resize
 import argparse
 import sys
 
-from analyser.server import Server
+
+from typing import Any, Generator, List
 
 
 def id_to_path(id, image_paths):
@@ -73,6 +75,69 @@ def get_entry_with_path(entry, image_paths):
                 pass
 
 
+def entries_to_request(
+    entries: List[Dict], collection_name: str
+) -> Generator[Any, Any, Any]:
+    for entry in entries:
+        if not isinstance(entry, dict):
+            logging.error("Unkonwn format")
+            exit()
+
+        request = collection_pb2.AddPointsRequest()
+        request.collection_name = collection_name
+
+        for key, value in flat_dict(entry, merge_symbol="/").items():
+            if isinstance(value, (list, set)):
+                for v in value:
+                    if isinstance(v, dict):
+                        if "lang" in v and "value" in v:
+
+                            lang = v.get("lang", "en")
+                            text = v.get("value", "en")
+
+                            data_entry = request.data.add()
+                            data_entry.name = f"{key}/{lang}"
+                            data_entry.text.text = text
+                            data_entry.text.language = lang
+                        else:
+                            logging.error(f"Parsing error 1 {entry}")
+                            exit()
+                    else:
+                        logging.error(f"Parsing error 2 {entry}")
+                        exit()
+            elif key == "id":
+                request.id = str(value)
+            elif isinstance(value, str):
+                if os.path.exists(value):
+                    m = mimetypes.guess_type(value)[0]
+                    if "image" in m:
+
+                        request_image = request.data.add()
+                        request_image.name = key
+                        request_image.image.content = open(value, "rb").read()
+
+                        # TODO
+                        if "jpeg" in m:
+                            request_image.image.ext = "jpg"
+                        else:
+                            logging.error(f"Unsupported image type {m}")
+                            exit()
+                    print()
+
+            elif isinstance(value, int):
+                data_entry = request.data.add()
+                data_entry.name = key
+                data_entry.int.value = value
+            elif isinstance(value, float):
+                data_entry = request.data.add()
+                data_entry.name = key
+                data_entry.float.value = value
+            else:
+                logging.error(f"Parsing error 3 {entry} {key} {value}")
+                exit()
+        yield request
+
+
 def list_images(paths, name_as_hash=False):
     if not isinstance(paths, (list, set)):
         if os.path.isdir(paths):
@@ -105,38 +170,26 @@ def list_images(paths, name_as_hash=False):
     return entries
 
 
-def list_json(paths, image_paths=None):
-    entries = []
+def list_json(paths, image_paths=None) -> Generator[Dict, Any, Any]:
 
     with open(paths, "r", encoding="utf-8") as f:
         for entry in json.load(f):
             entry = get_entry_with_path(entry, image_paths)
             if entry:
-                entries.append(entry)
-
-        logging.info(f"{len(entries)}")
-
-    return entries
+                yield entry
 
 
-def list_jsonl(paths, image_paths=None):
-    entries = []
-
+def list_jsonl(paths, image_paths=None) -> Generator[Dict, Any, Any]:
     with open(paths, "r", encoding="utf-8") as f:
         for line in f:
             entry = json.loads(line)
 
             entry = get_entry_with_path(entry, image_paths)
             if entry:
-                entries.append(entry)
-
-        logging.info(f"{len(entries)}")
-
-    return entries
+                yield entry
 
 
-def list_csv(paths, image_paths=None):
-    entries = []
+def list_csv(paths, image_paths=None) -> Generator[Dict, Any, Any]:
 
     with open(paths, "r", encoding="utf-8") as f:
         for row in csv.DictReader(f):
@@ -158,11 +211,7 @@ def list_csv(paths, image_paths=None):
 
             entry = get_entry_with_path(entry, image_paths)
             if entry:
-                entries.append(entry)
-
-        logging.info(f"{len(entries)}")
-
-    return entries
+                yield entry
 
 
 def copy_image_hash(
@@ -180,7 +229,7 @@ def copy_image_hash(
         if not os.path.exists(image_output_dir):
             os.makedirs(image_output_dir)
 
-        image = imageio.imread(image_path)
+        image = iio.imread(image_path)
 
         for res in resolutions:
             if "min_dim" in res:
@@ -191,7 +240,7 @@ def copy_image_hash(
             image_output_file = os.path.join(
                 image_output_dir, f"{hash_value}{res['suffix']}.jpg"
             )
-            imageio.imwrite(image_output_file, new_image)
+            iio.imwrite(image_output_file, new_image)
 
         image_output_file = os.path.abspath(
             os.path.join(image_output_dir, f"{hash_value}.jpg")
@@ -341,9 +390,9 @@ class Client:
                 lambda x: {**x, "path": id_to_path(x["id"], image_paths)}, entries
             )
 
-        entries = list(entries)
-
         if download:
+
+            entries = list(entries)
             entries_to_download = [
                 e for e in entries if ("path" not in e or not os.path.exists(e["path"]))
             ]
@@ -364,88 +413,14 @@ class Client:
 
         logging.info(f"Client: Start indexing {len(entries)} images")
 
+        entries = entries_to_request(entries, parameters.get("collection_name"))
+
         def entry_generator(entries, blacklist):
             for entry in entries:
-                if blacklist is not None and entry["id"] in blacklist:
+                if blacklist is not None and entry.id in blacklist:
                     continue
-
-                request = collection_pb2.AddPointsRequest()
-                request.collection_name = parameters.get("collection_name")
-
-                for k, v in entry["meta"].items():
-                    if isinstance(v, (list, set)):
-                        for v_1 in v:
-
-                            data_entry = request.data.add()
-                            data_entry.name = f"meta/{k}"
-
-                            if isinstance(v_1, int):
-                                data_entry.int.value = v_1
-                            if isinstance(v_1, float):
-                                data_entry.float.value = v_1
-                            if isinstance(v_1, str):
-                                data_entry.text.text = v_1
-                    else:
-                        data_entry = request.data.add()
-                        data_entry.name = f"meta/{k}"
-
-                        if isinstance(v, int):
-                            data_entry.int.value = v
-                        if isinstance(v, float):
-                            data_entry.float.value = v
-                        if isinstance(v, str):
-                            data_entry.text.text = v
-
-                if "origin" in entry:
-                    for k, v in entry["origin"].items():
-                        if isinstance(v, (list, set)):
-                            for v_1 in v:
-                                data_entry = request.data.add()
-                                data_entry.name = f"source/{k}"
-
-                                if isinstance(v_1, int):
-                                    data_entry.int.value = v_1
-                                if isinstance(v_1, float):
-                                    data_entry.float.value = v_1
-                                if isinstance(v_1, str):
-                                    data_entry.text.text = v_1
-                        else:
-                            data_entry = request.data.add()
-                            data_entry.name = f"source/{k}"
-
-                            if isinstance(v, int):
-                                data_entry.int.value = v
-                            if isinstance(v, float):
-                                data_entry.float.value = v
-                            if isinstance(v, str):
-                                data_entry.text.text = v
-
-                if "collection" in entry:
-
-                    if "id" in entry["collection"]:
-                        data_entry = request.data.add()
-                        data_entry.name = "collection/id"
-                        data_entry.text.text = entry["collection"]["id"]
-
-                    if "name" in entry["collection"]:
-                        data_entry = request.data.add()
-                        data_entry.name = "collection/name"
-                        data_entry.text.text = entry["collection"]["name"]
-
-                    if "is_public" in entry["collection"]:
-                        data_entry = request.data.add()
-                        data_entry.name = "collection/is_public"
-                        data_entry.bool.value = entry["collection"]["is_public"]
-
-                request_image = request.data.add()
-                request_image.image.content = open(entry["path"], "rb").read()
-
-                # TODO
-                request_image.image.ext = "jpg"
-                request_image.name = "image"
-
-                request.id = entry["id"]
-                yield request
+                logging.info(f"{entry.collection_name}:{entry.id}")
+                yield entry
 
         channel = grpc.insecure_channel(
             f"{self.host}:{self.port}",
@@ -462,7 +437,7 @@ class Client:
         try_count = 20
         count = 0
 
-        with tqdm(desc="Indexing", total=len(entries)) as pbar:
+        with tqdm(desc="Indexing") as pbar:
             while try_count > 0:
                 try:
                     gen_iter = entry_generator(entries, blacklist)
@@ -511,8 +486,8 @@ class Client:
             ],
         )
 
-        stub = analyser_pb2_grpc.AnalyserStub(channel)
-        request = analyser_pb2.SearchRequest()
+        stub = searcher_pb2_grpc.SearcherStub(channel)
+        request = searcher_pb2.SearchRequest()
 
         # a = {
         #     "terms": [
@@ -530,23 +505,42 @@ class Client:
         # }
 
         for q in query["terms"]:
-            if q["type"] == "plugin_vector":
-                plugin_vector_params = q.get("params")
+            print(q, flush=True)
+            if q["type"] == "vector":
+                vector_params = q.get("params")
                 term = request.terms.add()
-                params = q["params"]
-                term.vector.analyse.plugin = params["plugin"]
 
-                for i in params.get("inputs", []):
-                    input_field = term.vector.analyse.inputs.add()
+                for i in vector_params.get("inputs", []):
+                    input_field = term.vector.inputs.add()
                     if i["type"] == "image":
                         input_field.name = "image"
                         input_field.image.content = open(i["path"], "rb").read()
                     elif i["type"] == "string":
                         input_field.name = "text"
-                        input_field.string.text = i["text"]
+                        input_field.text.text = i["text"]
+
+                for i in vector_params.get("vector_indexes", []):
+                    vector_index = term.vector.vector_indexes.add()
+                    vector_index.name = i
+                    vector_index.weight = 1.0
+
+            if q["type"] == "plugin_vector":
+                plugin_vector_params = q.get("params")
+                term = request.terms.add()
+                params = q["params"]
+                term.plugin_vector.analyse.plugin = params["plugin"]
+
+                for i in params.get("inputs", []):
+                    input_field = term.plugin_vector.analyse.inputs.add()
+                    if i["type"] == "image":
+                        input_field.name = "image"
+                        input_field.image.content = open(i["path"], "rb").read()
+                    elif i["type"] == "string":
+                        input_field.name = "text"
+                        input_field.text.text = i["text"]
 
                 for p in params.get("parameters", []):
-                    parameter_field = term.vector.analyse.parameters.add()
+                    parameter_field = term.plugin_vector.analyse.parameters.add()
                     parameter_field.name = p["name"]
                     parameter_field.content = str(p["value"]).encode()
 
@@ -557,19 +551,22 @@ class Client:
                     if isinstance(p["value"], str):
                         parameter_field.type = common_pb2.STRING_TYPE
 
-                term.vector.vector_indexes.extend(params["vector_indexes"])
+                for i in params.get("vector_indexes", []):
+                    vector_index = term.plugin_vector.vector_indexes.add()
+                    vector_index.name = i
+                    vector_index.weight = 1.0
 
             elif q["type"] == "text":
                 text_params = q.get("params")
+
                 term = request.terms.add()
-                params = q["params"]
-                term.text.query = params["query"]
-                term.text.field = params["field"]
+                term.text.query = text_params["query"]
+                term.text.field = text_params["field"]
 
                 term.text.flag = searcher_pb2.TextSearchTerm.MUST
-                if params["flag"] == "SHOULD":
+                if text_params["flag"] == "SHOULD":
                     term.text.flag = searcher_pb2.TextSearchTerm.SHOULD
-                if params["flag"] == "NOT":
+                if text_params["flag"] == "NOT":
                     term.text.flag = searcher_pb2.TextSearchTerm.NOT
             # if "field" in q and q["field"] is not None:
             #     type_req = q["field"]
@@ -614,19 +611,25 @@ class Client:
 
         response = stub.search(request)
 
-        status_request = analyser_pb2.ListSearchResultRequest(id=response.id)
+        status_request = searcher_pb2.ListSearchResultRequest(id=response.id)
+
+        print(status_request, flush=True)
 
         for x in range(600):
+            print("TRY")
             try:
                 response = stub.list_search_result(status_request)
+                print(response, flush=True)
 
+                print("RESULT")
                 return response
             except grpc.RpcError as e:
                 if e.code() == grpc.StatusCode.FAILED_PRECONDITION:
                     pass  # {"status": "running"}
-            return
+                else:
+                    print(e)
 
-            time.sleep(0.01)
+            time.sleep(0.1)
 
         return {"error"}
 
@@ -836,7 +839,8 @@ def main():
         # except:
         #     query = {"queries": [{"type": "meta", "query": args.query}]}
         time_start = time.time()
-        client.search(query)
+        result = client.search(query)
+        print(len(result.entries))
         time_stop = time.time()
         print(time_stop - time_start)
 

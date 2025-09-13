@@ -34,9 +34,9 @@ CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 
 INSTALLED_APPS = [
+    "corsheaders",
     "rest_framework",
     "rest_framework.authtoken",
-    "corsheaders",
     "backend",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -194,8 +194,8 @@ MEDIA_ROOT = os.path.join("/data/media/")
 UPLOAD_ROOT = os.path.join("/data/upload/")
 IMAGE_EXT = "jpg"
 
-MEDIA_URL = FORCE_SCRIPT_NAME + "media/"
-UPLOAD_URL = FORCE_SCRIPT_NAME + "upload/"
+MEDIA_URL = "http://localhost:8080/" + "media/"
+UPLOAD_URL = "http://localhost:8080/" + "upload/"
 
 GRPC_HOST = "analyser"
 GRPC_PORT = 50051

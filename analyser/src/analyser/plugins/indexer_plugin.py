@@ -174,7 +174,6 @@ class IndexerPluginManager:
             }
 
     def __contains__(self, collection_name):
-        print(self.indexes[collection_name], flush=True)
         return collection_name in self.indexes
 
     def list_collections(self):
@@ -255,3 +254,23 @@ class IndexerPluginManager:
             del self.indexes[collection_name]
         print("Status", status, flush=True)
         return status
+
+    def search(
+        self,
+        collection_name=None,
+        **kwargs,
+    ):
+        # TODO add lock here
+        logging.info(f"[IndexerPluginManager]: search")
+        logging.info(f"[IndexerPluginManager]: {collection_name}")
+
+        if collection_name not in self.indexes:
+            logging.error(
+                "[IndexerPluginManager::search] Unknown collection '{collection_name}'"
+            )
+            return None
+
+        results = self.indexes[collection_name]["indexer_plugin"].search(**kwargs)
+        print(results, flush=True)
+        print("##########")
+        return results

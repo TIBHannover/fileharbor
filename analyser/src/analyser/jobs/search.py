@@ -1,67 +1,28 @@
 import logging
-import imageio
-import traceback
-from packaging import version
 
-from analyser.utils import image_normalize
 from inference import InferenceServerFactory
-from plugins import IndexerPluginManager, MappingPluginManager, ComputePluginManager
+from plugins import IndexerPluginManager, ComputePluginManager
 from plugins.cache import Cache
 from data import DataManager
+from fnmatch import fnmatch
 
-from interface import analyser_pb2
+from interface import searcher_pb2, common_pb2
 
-from interface.utils import (
-    meta_from_proto,
-    meta_to_proto,
-    classifier_to_proto,
-    feature_to_proto,
-)
-from google.protobuf.json_format import MessageToJson, MessageToDict, ParseDict
+from interface.utils import meta_to_proto
+from google.protobuf.json_format import MessageToDict, ParseDict
+
+from typing import Dict
+from analyser.shared_object import SharedObject
 
 
 class SearchJob:
-    def __init__(self, config=None):
-        if config is not None:
-            self.init_worker(config)
+    def __init__(self, shared_object: SharedObject, config: Dict = None):
+        self.shared_object = shared_object
+        if config is None:
+            config = {}
+        self.config = config
 
-    @classmethod
-    def init_worker(cls, config):
-        inference_server_config = config.get("inference_server", {})
-        inference_server = InferenceServerFactory.build(
-            inference_server_config["type"], config=inference_server_config["params"]
-        )
-        setattr(cls, "inference_server", inference_server)
-
-        compute_manager = ComputePluginManager(
-            configs=config.get("compute_plugins", [])
-        )
-        setattr(cls, "compute_manager", compute_manager)
-
-        indexer_manager = IndexerPluginManager(configs=config.get("indexes", []))
-        indexer_manager.find()
-        setattr(cls, "indexer_manager", indexer_manager)
-
-        cache = Cache(
-            cache_dir=config.get("cache", {"cache_dir": None})["cache_dir"], mode="r"
-        )
-        setattr(cls, "cache", indexer_manager)
-
-        data_config = config.get("data", None)
-        data_dir = None
-        if data_config is not None:
-            data_dir = data_config.get("data_dir", None)
-            cache_config = data_config.get("cache")
-            if cache_config is not None:
-                cache = CacheManager.build(
-                    name=cache_config["type"], config=cache_config["params"]
-                )
-
-        data_manager = DataManager(data_dir=data_dir, cache=cache)
-        setattr(cls, "data_manager", data_manager)
-
-    @classmethod
-    def reranking(cls, result_list):
+    def reranking(self, result_list):
         # build lut key, [results]
         lut = {}
         for x in result_list:
@@ -81,71 +42,148 @@ class SearchJob:
 
         return result_list
 
-    @classmethod
-    def __call__(cls, query):
-        # TODO customize the indexing path and plugin behind it
-        logging.error(query)
+    def search_collection(self, query, collection):
 
-        request = ParseDict(query["request"], analyser_pb2.SearchRequest())
+        collection_manager = self.shared_object.indexer_plugin_manager
+
+        indexing_plugin_mappings = collection_manager.get_indexing_plugin_mappings(
+            collection
+        )
+
+        search_plugin_mappings = collection_manager.get_search_plugin_mappings(
+            collection
+        )
+
+        payload_mapping = collection_manager.get_payload_mapping(collection)
+
+        print(f"indexing_plugin_mappings {indexing_plugin_mappings}", flush=True)
+        print(f"search_plugin_mappings {search_plugin_mappings}", flush=True)
+        print(f"payload_mapping {payload_mapping}", flush=True)
 
         filters = []
-        for term in request.terms:
+        for term in query.terms:
 
             term_type = term.WhichOneof("term")
-            logging.error(term_type)
+            logging.error(term)
 
             if term_type == "text":
 
                 flag = "MUST"
-                if term.text.flag == analyser_pb2.TextSearchTerm.SHOULD:
+                if term.text.flag == searcher_pb2.TextSearchTerm.SHOULD:
                     flag = "SHOULD"
-                if term.text.flag == analyser_pb2.TextSearchTerm.NOT:
+                if term.text.flag == searcher_pb2.TextSearchTerm.NOT:
                     flag = "NOT"
                 filters.append(
                     {"field": term.text.field, "query": term.text.query, "flag": flag}
                 )
 
-        # test if the index exist in this collection
-        collection_indexes_info = cls.indexer_manager.get_collection_indexes()
+            if term_type == "vector":
+                vector_term = term.vector
 
-        collection_indexes_info_lut = {
-            x["name"]: x["size"] for x in collection_indexes_info
-        }
+                data_dict = {}
+                for vector_input in vector_term.inputs:
+                    input_type = vector_input.WhichOneof("data")
+                    if input_type == "text":
+                        data_dict[vector_input.name] = vector_input
+
+                data_plugin_mapping = []
+                for search_plugin_mapping in search_plugin_mappings:
+                    for field in search_plugin_mapping.fields:
+                        for name, data in data_dict.items():
+                            if fnmatch(name, field):
+
+                                data_plugin_mapping.append(
+                                    (search_plugin_mapping, name, data)
+                                )
+                print(f"data_dict {data_dict}", flush=True)
+                print(f"term {term}", flush=True)
+                print(f"data_plugin_mapping {data_plugin_mapping}", flush=True)
+                feature_list = []
+                for data_plugin in data_plugin_mapping:
+                    data = data_plugin[2]
+                    index_name = data_plugin[0].index_name
+
+                    for k, v in data_plugin[0].input_mapping.items():
+                        if fnmatch(data_plugin[1], k):
+                            data.name = v
+
+                    request = common_pb2.PluginRun(
+                        plugin=data_plugin[0].compute_plugin,
+                        inputs=[data],
+                    )
+
+                    results = self.shared_object.inference_server_manager(
+                        self.shared_object.compute_plugin_manager,
+                        compute_plugin_name=data_plugin[0].compute_plugin,
+                        request=request,
+                    )
+
+                    if not results or len(results.results) <= 0:
+                        logging.warning("Not plugin output")
+                        continue
+
+                    # TODO multivector plugins
+                    feature_vecs = list(results.results[0].result.feature.feature)
+                    feature_list.append(
+                        {"index_name": index_name, "value": feature_vecs}
+                    )
+
+                # print({"features": feature_dict}, flush=True)
+            result = self.shared_object.indexer_plugin_manager.search(
+                collection_name=collection, queries=feature_list, filters=filters
+            )
+            logging.info(f"Result: {len(result)}")
+            return result
+        # results = []
+        # for term in request.terms:
+
+        #     term_type = term.WhichOneof("term")
+        #     logging.error(term_type)
+
+        #     if term_type == "plugin_vector":
+        #         plugin_results = cls.inference_server(
+        #             cls.compute_manager, term.vector.analyse.plugin, term.vector.analyse
+        #         )
+        #         feature_vec = list(plugin_results.results[0].result.feature.feature)
+        #         term_results = cls.indexer_manager.search(
+        #             queries=[
+        #                 {
+        #                     "index_name": k.name,
+        #                     "value": feature_vec,
+        #                     "weight": k.weight,
+        #                 }
+        #                 for k in term.vector.vector_indexes
+        #                 if k.name in collection_indexes_info_lut
+        #             ],
+        #             filters=filters,
+        #         )
+        #         results.extend(term_results)
+
+    def __call__(self, query):
+        # TODO customize the indexing path and plugin behind it
+        logging.error(query)
+
+        request = ParseDict(query["request"], searcher_pb2.SearchRequest())
+
+        collection_manager = self.shared_object.indexer_plugin_manager
+
+        collections = request.collections
+
+        if len(request.collections) == 0:
+            collections = collection_manager.list_collections()
 
         results = []
-        for term in request.terms:
+        for collection in collections:
+            result = self.search_collection(request, collection)
+            results.extend(result)
 
-            term_type = term.WhichOneof("term")
-            logging.error(term_type)
+        results = self.reranking(results)
 
-            if term_type == "vector":
-                plugin_results = cls.inference_server(
-                    cls.compute_manager, term.vector.analyse.plugin, term.vector.analyse
-                )
-                feature_vec = list(plugin_results.results[0].result.feature.feature)
-                term_results = cls.indexer_manager.search(
-                    queries=[
-                        {
-                            "index_name": k.name,
-                            "value": feature_vec,
-                            "weight": k.weight,
-                        }
-                        for k in term.vector.vector_indexes
-                        if k.name in collection_indexes_info_lut
-                    ],
-                    filters=filters,
-                )
-                results.extend(term_results)
-
-        # Reranking
-
-        results = cls.reranking(results)
-
-        proto_results = analyser_pb2.ListSearchResultReply()
+        proto_results = searcher_pb2.ListSearchResultReply()
         for x in results:
             entry = proto_results.entries.add()
             entry.id = x["id"]
             meta_to_proto(entry.meta, x["meta"])
-            print("SEARCHENTRY", entry, flush=True)
+            # print("SEARCHENTRY", entry, flush=True)
 
         return MessageToDict(proto_results)

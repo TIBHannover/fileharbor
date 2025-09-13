@@ -120,10 +120,6 @@ class CollectionServicer(collection_pb2_grpc.CollectionServicer):
             "collection_name": collection_name,
         }
 
-        print("################", flush=True)
-        print(collection_name, flush=True)
-        print("################", flush=True)
-
         # indexing_job = IndexingJob()
         # indexing_job.init_worker(self.config)
         # indexing_job(copy.deepcopy(variable))

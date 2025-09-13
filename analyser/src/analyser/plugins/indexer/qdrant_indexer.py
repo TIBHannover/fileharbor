@@ -107,7 +107,10 @@ class QDrantIndexer(IndexerPlugin):
         )
 
     def search(self, queries, filters, size=100):
-
+        print("##########################", flush=True)
+        print("##########################", flush=True)
+        print("##########################", flush=True)
+        print(f"{queries}", flush=True)
         results = []
 
         must = [
@@ -139,7 +142,9 @@ class QDrantIndexer(IndexerPlugin):
             must_not = None
 
         for q in queries:
-            # print(collection_id, flush=True)
+            print(
+                models.NamedVector(name=q["index_name"], vector=q["value"]), flush=True
+            )
             result = self.client.search(
                 collection_name="default",
                 query_vector=models.NamedVector(
