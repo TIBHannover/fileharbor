@@ -121,15 +121,30 @@ services:
       - postgres
       - memcached
 
-  frontend:
-    image: app/frontend
+  # frontend:
+  #   image: app/frontend
+  #   build:
+  #     context: ./frontend
+  #   ports:
+  #     - 8080:80
+  #   volumes:
+  #     - type: bind
+  #       source: ./frontend/
+  #       target: /app/frontend
+  #     - type: bind
+  #       source: ./data/
+  #       target: /data
+  #   working_dir: /app/frontend
+
+  frontend_vue3:
+    image: app/frontend_vue3
     build:
-      context: ./frontend
+      context: ./frontend_vue3
     ports:
       - "127.0.0.1:8080:80"
     volumes:
       - type: bind
-        source: ./frontend/
+        source: ./frontend_vue3/
         target: /app/frontend
       - type: bind
         source: ./data/
