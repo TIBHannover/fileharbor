@@ -12,6 +12,11 @@ import imageio.v3 as iio
 import functools
 from analyser.utils import flat_dict
 
+from PIL import Image
+
+Image.MAX_IMAGE_PIXELS = None
+
+
 from typing import Dict
 
 import multiprocessing as mp
@@ -45,34 +50,13 @@ def id_to_path(id, image_paths):
 
 
 def get_entry_with_path(entry, image_paths):
-    if "path" not in entry:
-        entry["path"] = id_to_path(entry["id"], image_paths)
-    else:
-        if not os.path.isabs(entry["path"]):
-            entry["path"] = os.path.join(image_paths, entry["path"])
-        if not os.path.exists(entry["path"]):
-            entry["path"] = id_to_path(entry["id"], image_paths)
-
-    if os.path.exists(entry["path"]):
-        return entry
-    elif "link" in entry.get("origin", {}):
-        return entry
-    else:
-        entry_path = os.path.join(image_paths, f"{entry['id']}.jpg")
-
-        if os.path.exists(entry_path):
-            entry["id"] = uuid.uuid4().hex  # reset identifier
-            entry["path"] = id_to_path(entry["id"], image_paths)
-
-            os.makedirs(os.path.dirname(entry["path"]), exist_ok=True)
-
-            try:
-                shutil.copy(entry_path, entry["path"])
-                os.remove(entry_path)
-
-                return entry
-            except:
-                pass
+    for data_entry in entry["entries"]:
+        if data_entry.get("type") == "image":
+            image_id = uuid.uuid5(uuid.NAMESPACE_URL, data_entry["url"]).hex
+            data_entry.update(
+                {"id": image_id, "file_path": id_to_path(image_id, image_paths)}
+            )
+    return entry
 
 
 def entries_to_request(
@@ -85,129 +69,104 @@ def entries_to_request(
 
         request = collection_pb2.AddPointsRequest()
         request.collection_name = collection_name
+        request.id = entry.get("id")
 
-        for key, value in flat_dict(entry, merge_symbol="/").items():
-            if isinstance(value, (list, set)):
-                for v in value:
-                    if isinstance(v, dict):
-                        if "lang" in v and "value" in v:
+        for data_entry in entry["entries"]:
+            try:
+                path = data_entry.get("path")
+                if data_entry.get("type") == "string":
+                    lang = data_entry.get("lang", "en")
+                    text = data_entry.get("value")
+                    if len(lang) == 0:
+                        lang = "en"
 
-                            lang = v.get("lang", "en")
-                            text = v.get("value", "en")
+                    pb_data_entry = request.data.add()
 
-                            data_entry = request.data.add()
-                            data_entry.name = f"{key}/{lang}"
-                            data_entry.text.text = text
-                            data_entry.text.language = lang
-                        else:
-                            logging.error(f"Parsing error 1 {entry}")
-                            exit()
-                    else:
-                        logging.error(f"Parsing error 2 {entry}")
-                        exit()
-            elif key == "id":
-                request.id = str(value)
-            elif isinstance(value, str):
-                if os.path.exists(value):
-                    m = mimetypes.guess_type(value)[0]
+                    pb_data_entry.name = f"{path}/_{lang}"
+                    pb_data_entry.text.text = text
+                    pb_data_entry.text.language = lang
+
+                if data_entry.get("type") == "url":
+                    text = data_entry.get("url")
+
+                    pb_data_entry = request.data.add()
+
+                    pb_data_entry.name = f"{path}"
+                    pb_data_entry.text.text = text
+
+                if data_entry.get("type") == "image":
+                    m = mimetypes.guess_type(data_entry["file_path"])[0]
                     if "image" in m:
 
-                        request_image = request.data.add()
-                        request_image.name = key
-                        request_image.image.content = open(value, "rb").read()
-
+                        pb_data_entry = request.data.add()
+                        pb_data_entry.id = data_entry["id"]
+                        pb_data_entry.name = path
+                        pb_data_entry.image.content = open(
+                            data_entry["file_path"], "rb"
+                        ).read()
                         # TODO
                         if "jpeg" in m:
-                            request_image.image.ext = "jpg"
+                            pb_data_entry.image.ext = "jpg"
                         else:
                             logging.error(f"Unsupported image type {m}")
                             exit()
-                    print()
 
-            elif isinstance(value, int):
-                data_entry = request.data.add()
-                data_entry.name = key
-                data_entry.int.value = value
-            elif isinstance(value, float):
-                data_entry = request.data.add()
-                data_entry.name = key
-                data_entry.float.value = value
-            else:
-                logging.error(f"Parsing error 3 {entry} {key} {value}")
-                exit()
+                if data_entry.get("type") == "geo":
+
+                    lat = data_entry.get("lat")
+                    lon = data_entry.get("lon")
+
+                    pb_data_entry = request.data.add()
+                    pb_data_entry.name = path
+                    pb_data_entry.geo.lat = lat
+                    pb_data_entry.geo.lon = lon
+
+                if data_entry.get("type") == "time":
+
+                    value = data_entry.get("value")
+
+                    pb_data_entry = request.data.add()
+                    pb_data_entry.name = path
+                    pb_data_entry.int.value = value
+            except Exception as e:
+                logging.error(f"Indexing error: {e}")
+            # elif key == "id":
+            #     request.id = str(value)
+            # elif isinstance(value, str):
+            #     if os.path.exists(value):
+            #         m = mimetypes.guess_type(value)[0]
+            #         if "image" in m:
+
+            #             request_image = request.data.add()
+            #             request_image.name = key
+            #             request_image.image.content = open(value, "rb").read()
+
+            #             # TODO
+            #             if "jpeg" in m:
+            #                 request_image.image.ext = "jpg"
+            #             else:
+            #                 logging.error(f"Unsupported image type {m}")
+            #                 exit()
+            #         print()
+
+            # elif isinstance(value, int):
+            #     data_entry = request.data.add()
+            #     data_entry.name = key
+            #     data_entry.int.value = value
+            # elif isinstance(value, float):
+            #     data_entry = request.data.add()
+            #     data_entry.name = key
+            #     data_entry.float.value = value
+            # else:
+            #     logging.error(f"Parsing error 3 {entry} {key} {value}")
+            #     exit()
         yield request
-
-
-def list_images(paths, name_as_hash=False):
-    if not isinstance(paths, (list, set)):
-        if os.path.isdir(paths):
-            file_paths = []
-
-            for root, dirs, files in os.walk(paths):
-                for f in files:
-                    file_path = os.path.abspath(os.path.join(root, f))
-                    file_paths.append(file_path)
-
-            paths = file_paths
-        else:
-            paths = [os.path.abspath(paths)]
-
-    entries = [
-        {
-            "id": (
-                os.path.splitext(os.path.basename(path))[0]
-                if name_as_hash
-                else uuid.uuid4().hex
-            ),
-            "filename": os.path.basename(path),
-            "path": os.path.abspath(path),
-            "meta": [],
-            "origin": [],
-        }
-        for path in paths
-    ]
-
-    return entries
-
-
-def list_json(paths, image_paths=None) -> Generator[Dict, Any, Any]:
-
-    with open(paths, "r", encoding="utf-8") as f:
-        for entry in json.load(f):
-            entry = get_entry_with_path(entry, image_paths)
-            if entry:
-                yield entry
 
 
 def list_jsonl(paths, image_paths=None) -> Generator[Dict, Any, Any]:
     with open(paths, "r", encoding="utf-8") as f:
         for line in f:
             entry = json.loads(line)
-
-            entry = get_entry_with_path(entry, image_paths)
-            if entry:
-                yield entry
-
-
-def list_csv(paths, image_paths=None) -> Generator[Dict, Any, Any]:
-
-    with open(paths, "r", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
-            entry = {}
-
-            for k, v in dict(row).items():
-                e = entry
-
-                for part in k.split("."):
-                    prev, e = e, e.setdefault(part, {})
-
-                if k != "id":
-                    try:
-                        v = int(v)
-                    except:
-                        pass
-
-                prev[part] = v
 
             entry = get_entry_with_path(entry, image_paths)
             if entry:
@@ -358,58 +317,39 @@ class Client:
         self,
         paths,
         image_paths=None,
-        plugins: list = None,
         download: bool = True,
         resolutions=[{"min_dim": 200, "suffix": "_m"}, {"suffix": ""}],
-        generate_url_id: bool = False,
         parameters: Dict = None,
     ):
         if not isinstance(paths, (list, set)):
             ext = os.path.splitext(paths)[1]
 
-            if ext == ".json":
-                entries = list_json(paths, image_paths)
-            elif ext == ".jsonl":
+            if ext == ".jsonl":
                 entries = list_jsonl(paths, image_paths)
-            elif ext == ".csv":
-                entries = list_csv(paths, image_paths)
             else:
                 raise
-        else:
-            entries = list_images(paths)
-
-        if generate_url_id:
-            entries = map(
-                lambda x: {
-                    **x,
-                    "id": uuid.uuid5(uuid.NAMESPACE_URL, x["origin"]["link"]).hex,
-                },
-                entries,
-            )
-            entries = map(
-                lambda x: {**x, "path": id_to_path(x["id"], image_paths)}, entries
-            )
 
         if download:
 
             entries = list(entries)
-            entries_to_download = [
-                e for e in entries if ("path" not in e or not os.path.exists(e["path"]))
-            ]
-            entries_exists = [
-                e for e in entries if ("path" in e and os.path.exists(e["path"]))
-            ]
 
-            logging.info(f"Client: Downloading {len(entries_to_download)} images")
+            entries_to_download = []
+
+            for e in entries:
+                for data_entry in e["entries"]:
+                    if "file_path" in data_entry and "url" in data_entry:
+                        entries_to_download.append(data_entry)
+
+            entries_to_download = filter(
+                lambda x: not os.path.exists(x["file_path"]), entries_to_download
+            )
+            entries_to_download = list(entries_to_download)
+
+            logging.info(f"Client: Downloading {len(list(entries_to_download))} images")
 
             entries_to_download = utils.download_entries(
-                entries_to_download, image_output=image_paths
+                entries_to_download, resolutions=resolutions
             )
-            entries = [*entries_exists, *entries_to_download]
-        else:
-            entries = [
-                e for e in entries if ("path" in e and os.path.exists(e["path"]))
-            ]
 
         logging.info(f"Client: Start indexing {len(entries)} images")
 
@@ -419,7 +359,6 @@ class Client:
             for entry in entries:
                 if blacklist is not None and entry.id in blacklist:
                     continue
-                logging.info(f"{entry.collection_name}:{entry.id}")
                 yield entry
 
         channel = grpc.insecure_channel(
@@ -434,31 +373,29 @@ class Client:
 
         time_start = time.time()
         blacklist = set()
-        try_count = 20
         count = 0
 
+        entries = list(entries)
+
         with tqdm(desc="Indexing") as pbar:
-            while try_count > 0:
-                try:
-                    gen_iter = entry_generator(entries, blacklist)
+            try:
+                gen_iter = entry_generator(entries, blacklist)
 
-                    for i, entry in enumerate(stub.add_points(gen_iter)):
-                        blacklist.add(entry.id)
-                        pbar.update()
-                        count += 1
+                for i, entry in enumerate(stub.add_points(gen_iter)):
+                    blacklist.add(entry.id)
+                    pbar.update()
+                    count += 1
 
-                        if count % 1000 == 0:
-                            speed = count / (time.time() - time_start)
-                            logging.info(
-                                f"Client: Indexing {count}/{len(entries)} (speed: {speed})"
-                            )
+                    if count % 1000 == 0:
+                        speed = count / (time.time() - time_start)
+                        logging.info(
+                            f"Client: Indexing {count}/{len(entries)} (speed: {speed})"
+                        )
 
-                    try_count = 0
-                except KeyboardInterrupt:
-                    raise
-                except Exception as e:
-                    logging.error(e)
-                    try_count -= 1
+            except KeyboardInterrupt:
+                raise
+            except Exception as e:
+                logging.error(e)
 
     def status(self, job_id):
         channel = grpc.insecure_channel(
@@ -710,10 +647,6 @@ def parse_args():
 
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose output")
     parser.add_argument("-d", "--debug", action="store_true", help="verbose output")
-    parser.add_argument(
-        "-g", "--generate-url-id", action="store_true", help="verbose output"
-    )
-    # parser.add_argument('-l', '--list', help='list all plugins')
 
     parser.add_argument("--host", help="")
     parser.add_argument("--port", type=int, help="")
@@ -826,7 +759,6 @@ def main():
         client.indexing(
             paths=args.path,
             image_paths=args.image_paths,
-            generate_url_id=args.generate_url_id,
             parameters=json.loads(args.parameters),
         )
 

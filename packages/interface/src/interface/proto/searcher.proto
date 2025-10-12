@@ -10,6 +10,7 @@ package fileharbor;
 
 import "data.proto";
 import "common.proto";
+import "collection.proto";
 
 service Searcher {
   rpc search(SearchRequest) returns (SearchReply) {}
@@ -151,14 +152,11 @@ message SearchReply { string id = 1; }
 
 message SearchResultEntry {
   string id = 1;
-  repeated ValueField meta = 2;
-  repeated ValueField origin = 3;
-  repeated ClassifierResult classifier = 4;
-  repeated Feature feature = 5;
   repeated float coordinates = 6;
   int64 cluster = 7;
   float distance = 8;
   bool padded = 10;
+  repeated Data data = 12;
 }
 
 message AggregateResult {

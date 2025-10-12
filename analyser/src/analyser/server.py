@@ -22,6 +22,7 @@ from inference import InferenceServerManager
 from plugins import ComputePluginManager
 from plugins.cache import Cache
 from data import DataManager
+from database.filesystem_database import FilesystemCollectionDatabase
 
 
 class Server:
@@ -50,12 +51,15 @@ class Server:
 
         data_manager = DataManager(data_dir=data_dir, cache=cache)
 
+        collection_item_database = FilesystemCollectionDatabase(config["data"]["path"])
+
         self.shared_object = SharedObject(
             config,
             inference_server_manager=inference_server_manager,
             compute_plugin_manager=compute_plugin_manager,
             indexer_plugin_manager=indexer_plugin_manager,
             data_manager=data_manager,
+            collection_item_database=collection_item_database,
         )
 
         self.indexer_servicer = AnalyserServicer(config, self.shared_object)

@@ -43,7 +43,7 @@ class DataManager:
     def create_data(self, data_type: str, data_id: str = None):
         assert data_type in self._data_name_lut, f"Unknown data type {data_type}"
 
-        if data_id is not None:
+        if data_id is not None and len(data_id) > 0:
             data = self._data_name_lut[data_type](id=data_id)
         else:
             data = self._data_name_lut[data_type]()

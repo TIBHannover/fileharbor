@@ -5,6 +5,7 @@ from plugins import IndexerPluginManager, ComputePluginManager
 from plugins.cache import Cache
 from data import DataManager
 from fnmatch import fnmatch
+import re
 
 from interface import searcher_pb2, common_pb2
 
@@ -59,6 +60,7 @@ class SearchJob:
         print(f"indexing_plugin_mappings {indexing_plugin_mappings}", flush=True)
         print(f"search_plugin_mappings {search_plugin_mappings}", flush=True)
         print(f"payload_mapping {payload_mapping}", flush=True)
+        print(f"query {query}", flush=True)
 
         filters = []
         for term in query.terms:
@@ -88,7 +90,22 @@ class SearchJob:
 
                 data_plugin_mapping = []
                 for search_plugin_mapping in search_plugin_mappings:
+                    if len(vector_term.vector_indexes) > 0:
+                        requested_index_names = [
+                            x.name for x in vector_term.vector_indexes
+                        ]
+                        if (
+                            search_plugin_mapping.index_name
+                            not in requested_index_names
+                        ):
+                            print(
+                                f"SKIP {search_plugin_mapping.index_name} ::: {requested_index_names} ::: {vector_term.vector_indexes} ::: {search_plugin_mapping}",
+                                flush=True,
+                            )
+                            continue
+                    print(f"FIELD {search_plugin_mapping}", flush=True)
                     for field in search_plugin_mapping.fields:
+                        print(f"FIELD {field}")
                         for name, data in data_dict.items():
                             if fnmatch(name, field):
 
@@ -100,6 +117,7 @@ class SearchJob:
                 print(f"data_plugin_mapping {data_plugin_mapping}", flush=True)
                 feature_list = []
                 for data_plugin in data_plugin_mapping:
+                    print(f"++++++++++++++++++++++++ S {data_plugin}", flush=True)
                     data = data_plugin[2]
                     index_name = data_plugin[0].index_name
 
@@ -119,7 +137,9 @@ class SearchJob:
                     )
 
                     if not results or len(results.results) <= 0:
-                        logging.warning("Not plugin output")
+                        logging.warning(
+                            f"No outputs from plugin ({data_plugin[0].compute_plugin})"
+                        )
                         continue
 
                     # TODO multivector plugins
@@ -128,36 +148,11 @@ class SearchJob:
                         {"index_name": index_name, "value": feature_vecs}
                     )
 
-                # print({"features": feature_dict}, flush=True)
             result = self.shared_object.indexer_plugin_manager.search(
                 collection_name=collection, queries=feature_list, filters=filters
             )
             logging.info(f"Result: {len(result)}")
             return result
-        # results = []
-        # for term in request.terms:
-
-        #     term_type = term.WhichOneof("term")
-        #     logging.error(term_type)
-
-        #     if term_type == "plugin_vector":
-        #         plugin_results = cls.inference_server(
-        #             cls.compute_manager, term.vector.analyse.plugin, term.vector.analyse
-        #         )
-        #         feature_vec = list(plugin_results.results[0].result.feature.feature)
-        #         term_results = cls.indexer_manager.search(
-        #             queries=[
-        #                 {
-        #                     "index_name": k.name,
-        #                     "value": feature_vec,
-        #                     "weight": k.weight,
-        #                 }
-        #                 for k in term.vector.vector_indexes
-        #                 if k.name in collection_indexes_info_lut
-        #             ],
-        #             filters=filters,
-        #         )
-        #         results.extend(term_results)
 
     def __call__(self, query):
         # TODO customize the indexing path and plugin behind it
@@ -175,7 +170,10 @@ class SearchJob:
         results = []
         for collection in collections:
             result = self.search_collection(request, collection)
-            results.extend(result)
+            if result:
+                results.extend(result)
+            else:
+                logging.warning(f"No search results")
 
         results = self.reranking(results)
 
@@ -183,7 +181,21 @@ class SearchJob:
         for x in results:
             entry = proto_results.entries.add()
             entry.id = x["id"]
-            meta_to_proto(entry.meta, x["meta"])
-            # print("SEARCHENTRY", entry, flush=True)
+            with self.shared_object.data_manager.load(x["id"]) as list_data:
+                for name, data in list_data:
+                    with data as data:
+                        print(data, flush=True)
+
+                        pb_data = entry.data.add()
+                        pb_data.CopyFrom(data.to_proto())
+
+                        data_type = pb_data.WhichOneof("data")
+                        if data_type == "text":
+                            if match := re.match(r"^(.*)\/_(.{2})$", name):
+
+                                pb_data.name = match.group(1)
+                                pb_data.text.language = match.group(2)
+                            else:
+                                pb_data.name = name
 
         return MessageToDict(proto_results)

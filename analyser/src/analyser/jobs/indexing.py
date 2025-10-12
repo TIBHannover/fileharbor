@@ -38,32 +38,31 @@ class IndexingJob:
 
         payload_mapping = collection_manager.get_payload_mapping(collection_name)
 
+        print("########################", args["points_list"], flush=True)
         try:
 
-            with self.shared_object.data_manager.load(
-                args["points_list"]
-            ) as points_list:
+            for i, point in enumerate(args["points_list"]):
+                with self.shared_object.data_manager.load(point) as point:
 
-                for i, point in points_list:
                     logging.info(f"{i} {point.id}")
-                    with point as point:
 
-                        data_dict = {}
-                        scalar_dict = {}
-                        for name, data in point:
-                            with data as data:
-                                if data.type in ("BoolData", "FloatData", "IntData"):
-                                    data_dict.update({name: data.to_proto()})
-                                if data.type in ("TextData"):
-                                    data_dict.update({name: data.to_proto()})
-                                if data.type in ("ImageData"):
-                                    data_dict.update({name: data.to_proto()})
+                    data_dict = {}
+                    scalar_dict = {}
+                    for name, data in point:
+                        with data as data:
+                            if data.type in ("BoolData", "FloatData", "IntData"):
+                                data_dict.update({name: data.to_proto()})
+                            if data.type in ("TextData"):
+                                data_dict.update({name: data.to_proto()})
+                            if data.type in ("ImageData"):
+                                data_dict.update({name: data.to_proto()})
+                            if data.type in ("GeoData"):
+                                data_dict.update({name: data.to_proto()})
 
-                                if hasattr(data, "to_scalar"):
-                                    scalar_dict.update({name: data.to_scalar()})
+                            if hasattr(data, "to_scalar"):
+                                scalar_dict.update({name: data.to_scalar()})
 
                     # extrect payload fields
-
                     meta_dict = {}
                     for field in payload_mapping.fields:
                         for name, data in scalar_dict.items():
@@ -83,10 +82,15 @@ class IndexingJob:
                                     )
 
                     feature_dict = {}
+                    feature_index_dict = {}
                     for data_plugin in data_plugin_mapping:
                         data = data_plugin[2]
+
                         index_name = data_plugin[0].index_name
                         feature_dict.setdefault(index_name, [])
+                        feature_index_dict.setdefault(
+                            "_feature_data_index/" + index_name, []
+                        )
 
                         for k, v in data_plugin[0].input_mapping.items():
                             if fnmatch(data_plugin[1], k):
@@ -104,19 +108,23 @@ class IndexingJob:
                         )
 
                         if not results or len(results.results) <= 0:
-                            logging.warning("Not plugin output")
+                            logging.warning(f"No outputs from plugin ({data_plugin})")
                             continue
 
                         # TODO multivector plugins
                         feature_vecs = list(results.results[0].result.feature.feature)
                         feature_dict[index_name].append(feature_vecs)
 
+                        feature_index_dict["_feature_data_index/" + index_name].append(
+                            data.id
+                        )
+
                     collection_manager.add_points(
                         collection_name="default",
                         points=[
                             {
                                 "id": point.id,
-                                "meta": meta_dict,
+                                "meta": {**meta_dict, **feature_index_dict},
                                 "features": feature_dict,
                             }
                         ],
@@ -136,4 +144,3 @@ class IndexingJob:
                 limit=2,
                 file=sys.stdout,
             )
-            print("Hello, World!", flush=True)

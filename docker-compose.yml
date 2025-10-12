@@ -11,6 +11,11 @@ services:
         source: ./data/qdrant
         target: /qdrant/storage
 
+    ulimits:
+      nofile:
+        soft: "65536"
+        hard: "65536"
+
   analyser:
     build: .
 
@@ -141,7 +146,7 @@ services:
     build:
       context: ./frontend_vue3
     ports:
-      - "127.0.0.1:8080:80"
+      - 80:80
     volumes:
       - type: bind
         source: ./frontend_vue3/

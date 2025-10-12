@@ -194,8 +194,8 @@ MEDIA_ROOT = os.path.join("/data/media/")
 UPLOAD_ROOT = os.path.join("/data/upload/")
 IMAGE_EXT = "jpg"
 
-MEDIA_URL = "http://localhost:8080/" + "media/"
-UPLOAD_URL = "http://localhost:8080/" + "upload/"
+MEDIA_URL = "http://localhost/" + "media/"
+UPLOAD_URL = "http://localhost/" + "upload/"
 
 GRPC_HOST = "analyser"
 GRPC_PORT = 50051

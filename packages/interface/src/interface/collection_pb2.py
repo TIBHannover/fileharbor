@@ -23,7 +23,7 @@ from . import data_pb2 as data__pb2
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n\x10\x63ollection.proto\x12\nfileharbor\x1a\x0c\x63ommon.proto\x1a\ndata.proto"?\n\x0fIndexDefinition\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04size\x18\x02 \x01(\x05\x12\x10\n\x08\x64istance\x18\x03 \x01(\t"V\n\rCreateRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12,\n\x07indexes\x18\x03 \x03(\x0b\x32\x1b.fileharbor.IndexDefinition"\x10\n\x0e\x43reateResponse"(\n\rDeleteRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t"\x10\n\x0e\x44\x65leteResponse"\r\n\x0bListRequest"(\n\x0cListResponse\x12\x18\n\x10\x63ollection_names\x18\x01 \x03(\t"W\n\x10\x41\x64\x64PointsRequest\x12\n\n\x02id\x18\x01 \x01(\t\x12\x1e\n\x04\x64\x61ta\x18\x02 \x03(\x0b\x32\x10.fileharbor.Data\x12\x17\n\x0f\x63ollection_name\x18\x03 \x01(\t"E\n\x0e\x41\x64\x64PointsReply\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\t\x12\x17\n\x0findexing_job_id\x18\x03 \x01(\t"\x0e\n\x0cQueryRequest"\x0f\n\rQueryResponse2\xdd\x02\n\nCollection\x12\x41\n\x06\x63reate\x12\x19.fileharbor.CreateRequest\x1a\x1a.fileharbor.CreateResponse"\x00\x12\x41\n\x06\x64\x65lete\x12\x19.fileharbor.DeleteRequest\x1a\x1a.fileharbor.DeleteResponse"\x00\x12;\n\x04list\x12\x17.fileharbor.ListRequest\x1a\x18.fileharbor.ListResponse"\x00\x12L\n\nadd_points\x12\x1c.fileharbor.AddPointsRequest\x1a\x1a.fileharbor.AddPointsReply"\x00(\x01\x30\x01\x12>\n\x05query\x12\x18.fileharbor.QueryRequest\x1a\x19.fileharbor.QueryResponse"\x00\x62\x06proto3'
+    b'\n\x10\x63ollection.proto\x12\nfileharbor\x1a\x0c\x63ommon.proto\x1a\ndata.proto"<\n\x0e\x43ollectionItem\x12\n\n\x02id\x18\x01 \x01(\t\x12\x1e\n\x04\x64\x61ta\x18\x02 \x03(\x0b\x32\x10.fileharbor.Data"?\n\x0fIndexDefinition\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04size\x18\x02 \x01(\x05\x12\x10\n\x08\x64istance\x18\x03 \x01(\t"V\n\rCreateRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12,\n\x07indexes\x18\x03 \x03(\x0b\x32\x1b.fileharbor.IndexDefinition"\x10\n\x0e\x43reateResponse"(\n\rDeleteRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t"\x10\n\x0e\x44\x65leteResponse"\r\n\x0bListRequest"(\n\x0cListResponse\x12\x18\n\x10\x63ollection_names\x18\x01 \x03(\t"W\n\x10\x41\x64\x64PointsRequest\x12\n\n\x02id\x18\x01 \x01(\t\x12\x1e\n\x04\x64\x61ta\x18\x02 \x03(\x0b\x32\x10.fileharbor.Data\x12\x17\n\x0f\x63ollection_name\x18\x03 \x01(\t"E\n\x0e\x41\x64\x64PointsReply\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\t\x12\x17\n\x0findexing_job_id\x18\x03 \x01(\t"\x0e\n\x0cQueryRequest"\x0f\n\rQueryResponse2\xdd\x02\n\nCollection\x12\x41\n\x06\x63reate\x12\x19.fileharbor.CreateRequest\x1a\x1a.fileharbor.CreateResponse"\x00\x12\x41\n\x06\x64\x65lete\x12\x19.fileharbor.DeleteRequest\x1a\x1a.fileharbor.DeleteResponse"\x00\x12;\n\x04list\x12\x17.fileharbor.ListRequest\x1a\x18.fileharbor.ListResponse"\x00\x12L\n\nadd_points\x12\x1c.fileharbor.AddPointsRequest\x1a\x1a.fileharbor.AddPointsReply"\x00(\x01\x30\x01\x12>\n\x05query\x12\x18.fileharbor.QueryRequest\x1a\x19.fileharbor.QueryResponse"\x00\x62\x06proto3'
 )
 
 _globals = globals()
@@ -31,28 +31,30 @@ _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "collection_pb2", _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
     DESCRIPTOR._loaded_options = None
-    _globals["_INDEXDEFINITION"]._serialized_start = 58
-    _globals["_INDEXDEFINITION"]._serialized_end = 121
-    _globals["_CREATEREQUEST"]._serialized_start = 123
-    _globals["_CREATEREQUEST"]._serialized_end = 209
-    _globals["_CREATERESPONSE"]._serialized_start = 211
-    _globals["_CREATERESPONSE"]._serialized_end = 227
-    _globals["_DELETEREQUEST"]._serialized_start = 229
-    _globals["_DELETEREQUEST"]._serialized_end = 269
-    _globals["_DELETERESPONSE"]._serialized_start = 271
-    _globals["_DELETERESPONSE"]._serialized_end = 287
-    _globals["_LISTREQUEST"]._serialized_start = 289
-    _globals["_LISTREQUEST"]._serialized_end = 302
-    _globals["_LISTRESPONSE"]._serialized_start = 304
-    _globals["_LISTRESPONSE"]._serialized_end = 344
-    _globals["_ADDPOINTSREQUEST"]._serialized_start = 346
-    _globals["_ADDPOINTSREQUEST"]._serialized_end = 433
-    _globals["_ADDPOINTSREPLY"]._serialized_start = 435
-    _globals["_ADDPOINTSREPLY"]._serialized_end = 504
-    _globals["_QUERYREQUEST"]._serialized_start = 506
-    _globals["_QUERYREQUEST"]._serialized_end = 520
-    _globals["_QUERYRESPONSE"]._serialized_start = 522
-    _globals["_QUERYRESPONSE"]._serialized_end = 537
-    _globals["_COLLECTION"]._serialized_start = 540
-    _globals["_COLLECTION"]._serialized_end = 889
+    _globals["_COLLECTIONITEM"]._serialized_start = 58
+    _globals["_COLLECTIONITEM"]._serialized_end = 118
+    _globals["_INDEXDEFINITION"]._serialized_start = 120
+    _globals["_INDEXDEFINITION"]._serialized_end = 183
+    _globals["_CREATEREQUEST"]._serialized_start = 185
+    _globals["_CREATEREQUEST"]._serialized_end = 271
+    _globals["_CREATERESPONSE"]._serialized_start = 273
+    _globals["_CREATERESPONSE"]._serialized_end = 289
+    _globals["_DELETEREQUEST"]._serialized_start = 291
+    _globals["_DELETEREQUEST"]._serialized_end = 331
+    _globals["_DELETERESPONSE"]._serialized_start = 333
+    _globals["_DELETERESPONSE"]._serialized_end = 349
+    _globals["_LISTREQUEST"]._serialized_start = 351
+    _globals["_LISTREQUEST"]._serialized_end = 364
+    _globals["_LISTRESPONSE"]._serialized_start = 366
+    _globals["_LISTRESPONSE"]._serialized_end = 406
+    _globals["_ADDPOINTSREQUEST"]._serialized_start = 408
+    _globals["_ADDPOINTSREQUEST"]._serialized_end = 495
+    _globals["_ADDPOINTSREPLY"]._serialized_start = 497
+    _globals["_ADDPOINTSREPLY"]._serialized_end = 566
+    _globals["_QUERYREQUEST"]._serialized_start = 568
+    _globals["_QUERYREQUEST"]._serialized_end = 582
+    _globals["_QUERYRESPONSE"]._serialized_start = 584
+    _globals["_QUERYRESPONSE"]._serialized_end = 599
+    _globals["_COLLECTION"]._serialized_start = 602
+    _globals["_COLLECTION"]._serialized_end = 951
 # @@protoc_insertion_point(module_scope)

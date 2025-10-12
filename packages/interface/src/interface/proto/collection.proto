@@ -5,6 +5,11 @@ package fileharbor;
 import "common.proto";
 import "data.proto";
 
+message CollectionItem {
+  string id = 1;
+  repeated Data data = 2;
+}
+
 message IndexDefinition {
   string name = 1;
   int32 size = 2;

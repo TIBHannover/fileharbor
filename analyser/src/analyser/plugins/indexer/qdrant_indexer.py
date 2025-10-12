@@ -154,7 +154,9 @@ class QDrantIndexer(IndexerPlugin):
                 limit=size,
                 with_payload=True,
                 with_vectors=True,
-                # search_params=models.SearchParams(hnsw_ef=512, exact=True),
+            )
+            print(
+                f"************** {q} :::: {result[-1]} *******************", flush=True
             )
             results.extend(
                 [

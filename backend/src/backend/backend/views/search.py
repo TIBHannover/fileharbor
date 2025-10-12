@@ -37,17 +37,12 @@ class Search(RPCView):
     def parse_search_request(self, params, ids=None, collection_ids=None):
         grpc_request = searcher_pb2.SearchRequest()
 
-        print(f"Search params: {params}", flush=True)
-
-        # Stefanie
-
         if params.get("query") and params.get("modality"):
             params.setdefault("queries", [])
             params["queries"].append(
                 {"type": params.get("modality"), "value": params.get("query")}
             )
 
-        print(f"Search params 2: {params}", flush=True)
         # if params.get("settings"):
         #     settings = params["settings"]
 
@@ -174,6 +169,10 @@ class Search(RPCView):
                 input_field.name = "text"
                 input_field.text.text = q["value"]
 
+                vector_search_index = term.vector.vector_indexes.add()
+                vector_search_index.name = "clip_image_siglip2"
+                vector_search_index.weight = 1.0
+
                 # for weight in q.get("weights", DjangoSettings.DEFAULT_INDEXES):
                 #     plugin_vector_search_index = term.vector.vector_indexes.add()
                 #     plugin_vector_search_index.name = weight.get("name", "")
@@ -286,8 +285,9 @@ class Search(RPCView):
 
         response_cache = cache.get(grpc_request_hash)
 
-        if response_cache is not None:
-            return msgpack.unpackb(response_cache)
+        # if response_cache is not None:
+        #     print("Cache hit", flush=True)
+        #     return msgpack.unpackb(response_cache)
 
         stub = searcher_pb2_grpc.SearcherStub(self.channel)
         response = stub.search(grpc_request)
@@ -313,31 +313,69 @@ class Search(RPCView):
             entries = []
 
             for e in response.entries:
+
                 entry = {
                     "id": e.id,
-                    "meta": meta_from_proto(e.meta),
-                    "origin": meta_from_proto(e.origin),
-                    "classifier": classifier_from_proto(e.classifier),
-                    "feature": feature_from_proto(e.feature),
-                    "coordinates": list(e.coordinates),
-                    "distance": e.distance,
-                    "cluster": e.cluster,
-                    "padded": e.padded,
+                    "meta": [],
+                    "images": [],
+                    # "meta": meta_from_proto(e.meta),
+                    # "origin": meta_from_proto(e.origin),
+                    # "classifier": classifier_from_proto(e.classifier),
+                    # "feature": feature_from_proto(e.feature),
+                    # "coordinates": list(e.coordinates),
+                    # "distance": e.distance,
+                    # "cluster": e.cluster,
+                    # "padded": e.padded,
                 }
+                for data in e.data:
+                    data_type = data.WhichOneof("data")
 
-                # entry["collection"] = {
-                #     "id": e.collection.id,
-                #     "name": e.collection.name,
-                #     "is_public": e.collection.is_public,
-                #     "user": e.collection.id in collection_ids,
-                # }
+                    if data_type == "bool":
 
-                # if e.collection.id in collection_ids:
-                #     entry["path"] = upload_url_to_image(e.id)
-                #     entry["preview"] = upload_url_to_image(e.id)
-                # else:
-                entry["path"] = media_url_to_image(e.id)
-                entry["preview"] = media_url_to_preview(e.id)
+                        entry["meta"].append(
+                            {
+                                "name": data.name,
+                                "value": data.bool.value,
+                                "type": data_type,
+                            }
+                        )
+                    elif data_type == "int":
+
+                        entry["meta"].append(
+                            {
+                                "name": data.name,
+                                "value": data.int.value,
+                                "type": data_type,
+                            }
+                        )
+
+                    elif data_type in "float":
+
+                        entry["meta"].append(
+                            {
+                                "name": data.name,
+                                "value": data.float.value,
+                                "type": data_type,
+                            }
+                        )
+                    elif data_type == "text":
+
+                        entry["meta"].append(
+                            {
+                                "name": data.name,
+                                "value": data.text.text,
+                                "type": data_type,
+                                "language": data.text.language,
+                            }
+                        )
+                    elif data_type == "image":
+
+                        entry["images"].append(
+                            {
+                                "path": media_url_to_image(data.id),
+                                "preview": media_url_to_preview(data.id),
+                            }
+                        )
 
                 entries.append(entry)
 

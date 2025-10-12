@@ -56,6 +56,11 @@ message IntData { int64 value = 1; }
 
 message FloatData { float value = 1; }
 
+message GeoData {
+  float lat = 1;
+  float lon = 2;
+}
+
 message Data {
   string id = 1;
   string name = 2;
@@ -70,6 +75,7 @@ message Data {
     BoolData bool = 10;
     IntData int = 11;
     FloatData float = 12;
+    GeoData geo = 13;
   }
 }
 
@@ -105,4 +111,6 @@ enum PluginDataType {
   BOOL_DATA = 25;
   INT_DATA = 26;
   FLOAT_DATA = 27;
+
+  GEO_DATA = 28;
 }

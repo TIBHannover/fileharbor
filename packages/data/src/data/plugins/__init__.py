@@ -6,6 +6,7 @@ from .meta_data import MetaData
 from .bool_data import BoolData
 from .float_data import FloatData
 from .int_data import IntData
+from .geo_data import GeoData
 from .text_data import TextData
 
 # from .hist_data import HistData

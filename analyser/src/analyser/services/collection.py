@@ -56,67 +56,78 @@ class CollectionServicer(collection_pb2_grpc.CollectionServicer):
 
         job_id = uuid.uuid4().hex
 
+        point_ids = []
         collection_name = None
-        with self.shared_object.data_manager.create_data("ListData") as points_list:
 
-            for data_point in request_iterator:
-                # TODO check if key already exists
-                data_id = data_point.id if data_point.id else uuid.uuid4().hex
+        for data_point in request_iterator:
+            # TODO check if key already exists
+            point_id = data_point.id if data_point.id else uuid.uuid4().hex
 
-                collection_name = data_point.collection_name
+            point_ids.append(point_id)
+            collection_name = data_point.collection_name
 
-                with points_list.create_data("ListData") as list_data:
-                    list_data.id = data_id
-                    for i, data in enumerate(data_point.data):
-                        data_type = data.WhichOneof("data")
+            with self.shared_object.data_manager.create_data(
+                "ListData", data_id=point_id
+            ) as list_data:
+                for i, data in enumerate(data_point.data):
+                    data_type = data.WhichOneof("data")
 
-                        if data_type == "image":
-                            with list_data.create_data(
-                                "ImageData", data.name
-                            ) as image_data:
-                                image_data.ext = data.image.ext
+                    data_id = data.id if data.id else uuid.uuid4().hex
 
-                                image = iio.imread(data.image.content)
-                                image_data.save_image(image)
+                    if data_type == "image":
+                        with list_data.create_data(
+                            "ImageData", data.name, data_id=data_id
+                        ) as image_data:
+                            image_data.ext = data.image.ext
 
-                        elif data_type == "bool":
-                            with list_data.create_data(
-                                "BoolData", data.name
-                            ) as bool_data:
-                                bool_data.value = data.bool.value
+                            image = iio.imread(data.image.content)
+                            image_data.save_image(image)
 
-                        elif data_type == "int":
-                            with list_data.create_data(
-                                "IntData", data.name
-                            ) as int_data:
-                                int_data.value = data.int.value
+                    elif data_type == "bool":
+                        with list_data.create_data(
+                            "BoolData", data.name, data_id=data_id
+                        ) as bool_data:
+                            bool_data.value = data.bool.value
 
-                        elif data_type == "float":
-                            with list_data.create_data(
-                                "FloatData", data.name
-                            ) as float_data:
-                                float_data.value = data.float.value
+                    elif data_type == "int":
+                        with list_data.create_data(
+                            "IntData", data.name, data_id=data_id
+                        ) as int_data:
+                            int_data.value = data.int.value
 
-                        elif data_type == "text":
-                            with list_data.create_data(
-                                "TextData", data.name
-                            ) as text_data:
-                                text_data.text = data.text.text
+                    elif data_type == "float":
+                        with list_data.create_data(
+                            "FloatData", data.name
+                        ) as float_data:
+                            float_data.value = data.float.value
 
-                        else:
-                            logging.warning(
-                                f"[Collection::add_points] Data type '{data_type}' is not supported."
-                            )
+                    elif data_type == "text":
+                        with list_data.create_data(
+                            "TextData", data.name, data_id=data_id
+                        ) as text_data:
+                            text_data.text = data.text.text
 
-                yield collection_pb2.AddPointsReply(
-                    status="ok", id=data_id, indexing_job_id=job_id
-                )
+                    elif data_type == "geo":
+                        with list_data.create_data(
+                            "GeoData", data.name, data_id=data_id
+                        ) as geo_data:
+                            geo_data.lat = data.geo.lat
+                            geo_data.lon = data.geo.lon
+
+                    else:
+                        logging.warning(
+                            f"[Collection::add_points] Data type '{data_type}' is not supported."
+                        )
+
+            yield collection_pb2.AddPointsReply(
+                status="ok", id=data_id, indexing_job_id=job_id
+            )
 
         #
         variable = {
             "future": None,
             "id": job_id,
-            "points_list": points_list.id,
+            "points_list": point_ids,
             "collection_name": collection_name,
         }
 

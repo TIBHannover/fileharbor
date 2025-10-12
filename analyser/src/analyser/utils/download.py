@@ -12,8 +12,13 @@ from multiprocessing import Pool
 
 from .image import image_resize
 
+from PIL import Image
+
+Image.MAX_IMAGE_PIXELS = None
+
 
 def download_image(url, max_dim=1024, try_count=2):
+    error = None
     while try_count > 0:
         try:
             request = urllib.request.Request(
@@ -27,32 +32,34 @@ def download_image(url, max_dim=1024, try_count=2):
                 },
             )
 
-            with urllib.request.urlopen(request, timeout=20) as response:
+            with urllib.request.urlopen(request, timeout=60) as response:
                 image = imageio.imread(response.read(), pilmode="RGB")
                 image = image_resize(image, max_dim=max_dim)
 
                 return image
 
-        except urllib.error.URLError:
+        except urllib.error.URLError as e:
+            error = e
             time.sleep(1.0)
-        except urllib.error.HTTPError:
-            time.sleep(10.0)
+        except urllib.error.HTTPError as e:
+            error = e
+            time.sleep(1.0)
         except KeyboardInterrupt:
             raise
-        except Exception:
-            time.sleep(1.0)
+        except Exception as e:
+            error = e
+            time.sleep(0.5)
 
         try_count -= 1
+    logging.warning(f"Unable to download {url}: {error}")
 
     return None
 
 
 def download_entry(
-    entry,
-    image_output,
-    resolutions=[{"min_dim": 200, "suffix": "_m"}, {"suffix": ""}]
+    entry, resolutions=[{"min_dim": 200, "suffix": "_m"}, {"suffix": ""}]
 ):
-    if os.path.splitext(entry["origin"]["link"])[1].lower()[1:] in [
+    if os.path.splitext(entry["url"])[1].lower()[1:] in [
         "svg",
         "djvu",
         "webm",
@@ -63,17 +70,15 @@ def download_entry(
         "oga",
         "mid",
     ]:
-        return None
+        return False
 
-    logging.info(f'{entry["origin"]["link"]} {entry["id"]}')
-    image = download_image(entry["origin"]["link"])
+    image = download_image(entry["url"])
 
     if image is None:
-        return None
+        return False
 
-    sample_id = entry["id"]
-    hash_value = sample_id
-    output_dir = os.path.join(image_output, sample_id[0:2], sample_id[2:4])
+    image_id = entry["id"]
+    output_dir = os.path.dirname(entry["file_path"])
     os.makedirs(output_dir, exist_ok=True)
 
     for res in resolutions:
@@ -82,12 +87,12 @@ def download_entry(
         else:
             new_image = image
 
-        image_output_file = os.path.join(output_dir, f"{hash_value}{res['suffix']}.jpg")
+        image_output_file = os.path.join(output_dir, f"{image_id}{res['suffix']}.jpg")
         imageio.imwrite(image_output_file, new_image)
 
-    image_output_file = os.path.abspath(os.path.join(output_dir, f"{hash_value}.jpg"))
+    image_output_file = os.path.abspath(os.path.join(output_dir, f"{image_id}.jpg"))
 
-    return {**entry, "path": os.path.join(output_dir, f"{hash_value}.jpg")}
+    return True
 
 
 def _download_entry(args):
@@ -96,23 +101,20 @@ def _download_entry(args):
 
 def download_entries(
     entries,
-    image_output=None,
     resolutions=[{"min_dim": 200, "suffix": "_m"}, {"suffix": ""}],
 ):
     new_entries = []
 
     with Pool(40) as p:
-        values = [(e, image_output, resolutions) for e in entries]
+        values = [(e, resolutions) for e in entries]
 
         for i, x in enumerate(
             tqdm(
                 p.imap(_download_entry, values),
-                desc="Downloading", total=len(entries),
+                desc="Downloading",
+                total=len(entries),
             )
         ):
-            if i % 100 == 0:
-                logging.info(f"Downloading {i}/{len(entries)}")
-
             if x is None:
                 continue
 

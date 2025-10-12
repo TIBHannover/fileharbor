@@ -35,11 +35,16 @@ class ListData(Data):
 
         self.save_dict("list_data.yml", {"index": self.index, "data": self.data})
 
-    def create_data(self, data_type: str, index: str = None) -> Data:
+    def create_data(
+        self, data_type: str, index: str = None, data_id: str = None
+    ) -> Data:
         assert self.fs.mode == "w", "Data packet is open read only"
         assert data_type in DataManager._data_name_lut, f"Unknown data type {data_type}"
 
-        data = DataManager._data_name_lut[data_type]()
+        if data_id is not None:
+            data = DataManager._data_name_lut[data_type](id=data_id)
+        else:
+            data = DataManager._data_name_lut[data_type]()
         data._register_fs_handler(LocalFSHandler(self.fs, data.id))
 
         self.data.append(data.id)

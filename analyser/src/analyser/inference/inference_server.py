@@ -93,7 +93,6 @@ class InferenceServerManager:
         # TODO add more checks here
         compute_plugin = compute_plugin_manager[compute_plugin_name]
         inference_server_name = compute_plugin["inference_server_name"]
-        print("FLUSH", flush=True)
         if inference_server_name is None:
             return compute_plugin["compute_plugin"](**kwargs)
 
