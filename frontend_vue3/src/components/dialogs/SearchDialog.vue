@@ -116,6 +116,7 @@
             clearable
             rounded
             flat
+            @keydown.enter.prevent="onApply"
           />
 
           <v-file-input
@@ -132,6 +133,7 @@
             multiple
             rounded
             flat
+            @keydown.enter.prevent="onApply"
           >
             <template #prepend-inner>
               <div
@@ -287,9 +289,7 @@
                     {{ option.value }}
                   </div>
 
-                  <div class="text-caption text-grey-darken-1">
-                    X Objects
-                  </div>
+                  <div class="text-caption text-grey-darken-1" />
                 </div>
               </v-btn>
             </v-slide-group-item>

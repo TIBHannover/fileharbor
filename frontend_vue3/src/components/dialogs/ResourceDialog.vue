@@ -9,7 +9,8 @@
       <v-container fluid>
         <v-row class="pa-0">
           <v-col
-            class="pa-6 border-e-sm"
+            class="pa-6 border-e-sm d-flex flex-column"
+            style="height: calc(100vh - 8px);"
             cols="6"
           >
             <div class="text-h5 font-weight-bold">
@@ -20,22 +21,22 @@
               {{ formattedYears }}
             </div>
 
-            <div class="mt-8">
+            <div class="mt-8 overflow-y-auto">
               <div
                 v-for="(names, field) in metadata"
                 :key="`${field}:${names}`"
                 class="py-2"
               >
                 <div class="text-body-3">
-                  {{ $t(`search.drawer.field.meta.${field}`) }}
+                  {{ $t(`search.drawer.field.${field}`) }}
                 </div>
 
                 <div class="mt-2">
                   <v-chip
                     v-for="name in names"
                     :key="name"
-                    class="mr-1 mb-1"
-                    @click="onFilter(`meta.${field}`, name)"
+                    class="mr-1 mb-1 cut-off w-250"
+                    @click="onFilter(field, name)"
                   >
                     {{ name }}
                   </v-chip>
@@ -71,7 +72,7 @@
               justify="center"
             >
               <v-img
-                :src="item.path"
+                :src="item.images[0].path"
                 :alt="titles[0]"
                 class="bg-grey-lighten-2"
                 loading="lazy"
@@ -138,6 +139,7 @@ const {
   isDisabled,
   onLoad,
   onError,
+  images,
   titles,
   years,
   metadata

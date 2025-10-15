@@ -49,23 +49,26 @@
       "count": "(No Filters) | ({count} Filter) | ({count} Filters)",
       "apply": "Apply",
       "field": {
-        "meta": {
-          "artist_name": "Creator",
-          "depicts": "Depicts",
-          "genre": "Genre",
-          "iconclass": "Iconclass",
-          "institution": "Institution",
-          "location": "Location",
-          "license": "License",
-          "medium": "Medium",
-          "movement": "Movement",
-          "object_type": "Object Type",
-          "period": "Period",
-          "title": "Title",
-          "url": "URL",
-          "wikidata": "Wikidata",
-          "year_min": "Creation Date"
-        },
+        "meta/collection": "Collection",
+        "meta/country": "Country",
+        "meta/country_of_origin": "Country of Origin",
+        "meta/creator": "Creator",
+        "meta/depicts": "Depicts",
+        "meta/genre": "Genre",
+        "meta/iconclass": "Iconclass",
+        "meta/institution": "Institution",
+        "meta/location": "Location",
+        "meta/license": "License",
+        "meta/made_from_material": "Material",
+        "meta/main_subject": "Main Subject",
+        "meta/medium": "Medium",
+        "meta/movement": "Movement",
+        "meta/instance_of": "Object Type",
+        "meta/period": "Period",
+        "meta/title": "Title",
+        "meta/year_min": "Time Begin",
+        "meta/year_max": "Time End",
+        "ref/url": "URL",
         "origin": {
           "name": "Dataset"
         }
@@ -75,11 +78,9 @@
   "resource": {
     "apply": "Search for Similar Images",
     "field": {
-      "meta": {
-        "title": "No Title",
-        "artist_name": "Unknown",
-        "year": "Unknown"
-      }
+      "meta/title": "No Title",
+      "meta/creator": "Unknown",
+      "meta/year": "Unknown"
     }
   },
   "general": {

@@ -3,17 +3,17 @@
     :model-value="modelValue"
     class="overflow-y-auto pt-2"
     width="400"
-    app
   >
     <v-expansion-panels
       v-model="panel"
       variant="accordion"
+      :max="3"
       multiple
       static
       flat
     >
       <v-expansion-panel
-        v-for="record in data"
+        v-for="record in filteredData"
         :key="record.field"
       >
         <v-expansion-panel-title>
@@ -56,14 +56,14 @@
 
         <v-expansion-panel-text>
           <HistogramPanel
-            v-if="record.field === 'meta.year_min'"
+            v-if="record.field === 'meta/year_min'"
             :data="record.entries"
             @update-years="onUpdateYears"
           >
             <v-row class="mt-2">
               <v-col>
                 <v-number-input
-                  :model-value="selectedEntries['meta.year_min']"
+                  :model-value="selectedEntries['meta/year_min']"
                   :placeholder="String(Math.min(...years))"
                   :min="Math.min(...years)"
                   :max="Math.max(...years)"
@@ -74,7 +74,7 @@
                   clearable
                   rounded
                   inset
-                  @update:model-value="val => (selectedEntries['meta.year_min'] = val)"
+                  @update:model-value="val => (selectedEntries['meta/year_min'] = val)"
                 >
                   <template #clear>
                     <v-icon size="14">
@@ -93,7 +93,7 @@
 
               <v-col>
                 <v-number-input
-                  :model-value="selectedEntries['meta.year_max']"
+                  :model-value="selectedEntries['meta/year_max']"
                   :placeholder="String(Math.max(...years))"
                   :min="Math.min(...years)"
                   :max="Math.max(...years)"
@@ -104,7 +104,7 @@
                   clearable
                   rounded
                   inset
-                  @update:model-value="val => (selectedEntries['meta.year_max'] = val)"
+                  @update:model-value="val => (selectedEntries['meta/year_max'] = val)"
                 >
                   <template #clear>
                     <v-icon size="14">
@@ -118,13 +118,13 @@
 
           <template v-else>
             <MapPanel
-              v-if="record.field === 'meta.location'"
+              v-if="isLocationEntries(record.entries)"
               :data="record.entries"
               class="mb-4"
             />
 
             <BarChartPanel
-              v-if="record.field === 'meta.depicts'"
+              v-else-if="!isNumericEntries(record.entries)"
               :data="record.entries"
             />
 
@@ -182,7 +182,7 @@ import MapPanel from '@/components/panels/MapPanel.vue'
 import BarChartPanel from '@/components/panels/BarChartPanel.vue'
 import HistogramPanel from '@/components/panels/HistogramPanel.vue'
 
-defineProps({
+const props = defineProps({
   modelValue: {
     type: Boolean,
     required: true
@@ -195,6 +195,20 @@ defineProps({
 
 const emit = defineEmits(['apply'])
 
+const filteredData = computed(() =>
+  (props.data ?? []).filter(r => r.field.startsWith('meta/'))
+)
+
+const isLocationEntries = (entries) => {
+  if (!Array.isArray(entries) || entries.length === 0) return false
+  return entries.some(e => e.lat && e.lon)
+}
+
+const isNumericEntries = (entries) => {
+  if (!Array.isArray(entries) || entries.length === 0) return false
+  return entries.every(e => typeof e.name === 'number' || !isNaN(Number(e.name)))
+}
+
 const panel = ref([0])
 const years = ref([])
 const selectedEntries = reactive({})
@@ -203,7 +217,7 @@ const selectedFields = computed(() => new Set(Object.keys(selectedEntries)))
 const isSelectedField = (field) => selectedFields.value.has(field)
 
 const selectionCounts = computed(() => {
-  const yearKeys = ["meta.year_min", "meta.year_max"]
+  const yearKeys = ["meta/year_min", "meta/year_max"]
   const hasRange = yearKeys.every((k) =>
     Object.prototype.hasOwnProperty.call(selectedEntries, k)
   )
@@ -248,6 +262,12 @@ const clearField = (field) => {
   selectedEntries[field] = []
   onApply()
 }
+
+watch(panel, (value) => {
+  if (value.length > 2) {
+    panel.value = value.slice(-2)
+  }
+})
 </script>
 
 <style scoped>

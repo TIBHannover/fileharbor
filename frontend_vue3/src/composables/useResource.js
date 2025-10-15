@@ -29,10 +29,10 @@ export default function useResource(item) {
 
   const getMetaValues = (key, toInt = false) => {
     const values = item.meta
-      .filter(m => m && m.name && m.value_str)
+      .filter(m => m && m.name && m.value)
       .filter(m => m.name === key)
       .map(m => {
-        let val = String(m.value_str).trim();
+        let val = String(m.value).trim();
         if (toInt) {
           const parsed = parseInt(val, 10);
           return isNaN(parsed) ? null : parsed;
@@ -45,18 +45,18 @@ export default function useResource(item) {
   }
 
   const titles = computed(() => {
-    const values = getMetaValues('title')
-    return values.length ? values : [t('resource.field.meta.title')]
+    const values = getMetaValues('meta/title')
+    return values.length ? values : [t('resource.field.meta/title')]
   })
 
   const creators = computed(() => {
-    const values = getMetaValues('artist_name')
-    return values.length ? values : [t('resource.field.meta.artist_name')]
+    const values = getMetaValues('meta/creator')
+    return values.length ? values : [t('resource.field.meta/creator')]
   })
 
   const years = computed(() => {
-    const mins = getMetaValues('year_min', true)
-    const maxs = getMetaValues('year_max', true)
+    const mins = getMetaValues('meta/year_min', true)
+    const maxs = getMetaValues('meta/year_max', true)
 
     const min = mins.length ? Math.min(...mins) : -9999
     const max = maxs.length ? Math.max(...maxs) : 9999
@@ -65,18 +65,16 @@ export default function useResource(item) {
 
   const metadata = computed(() => {
     const excluded = new Set([
-      'license',
-      'title',
-      'url',
-      'wikidata',
-      'year_min',
-      'year_max'
+      'meta/title',
+      'ref/url',
+      'meta/year_min',
+      'meta/year_max'
     ])
 
     const result = {}
-    for (const { name, value_str } of item.meta) {
-      if (!excluded.has(name) && value_str) {
-        const trimmed = value_str.toString().trim()
+    for (const { name, value } of item.meta) {
+      if (!excluded.has(name) && value) {
+        const trimmed = value.toString().trim()
         if (result[name]) {
           result[name].push(trimmed)
         } else {

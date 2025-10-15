@@ -102,10 +102,7 @@ const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: tr
 function indexMeta(meta = []) {
   const map = new Map()
   for (const m of meta) {
-    if (!m || !m.name) continue
-    if (typeof m.value_int === 'number') map.set(m.name, m.value_int)
-    else if (m.value_str != null) map.set(m.name, m.value_str)
-    else map.set(m.name, null)
+    map.set(m.name, m.value)
   }
   return map
 }
@@ -134,8 +131,8 @@ const orderedEntries = computed(() => {
     const meta = indexMeta(e.meta)
     return {
       entry: e,
-      year: meta.get('year_min') ?? null,
-      title: meta.get('title') ?? null,
+      year: meta.get('meta/year_min') ?? null,
+      title: meta.get('meta/title') ?? null,
       id: String(e?.id ?? '')
     }
   })

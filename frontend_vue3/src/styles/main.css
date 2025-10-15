@@ -41,3 +41,13 @@ div {
 .v-number-input .v-btn--disabled {
   opacity: 0;
 }
+
+.v-chip.cut-off > div {
+  display: inline-block;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.v-chip.w-250 > div {
+  max-width: 250px;
+}

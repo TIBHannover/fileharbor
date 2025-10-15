@@ -1,16 +1,18 @@
 <template>
   <v-slide-group
+    v-if="item.images.length > 1"
     class="image-overview"
     show-arrows="always"
     mandatory
   >
     <v-slide-group-item
-      v-for="n in 3"
-      :key="n"
+      v-for="image in item.images"
+      :key="image.path"
     >
       <v-img
-        :src="item.path"
+        :src="image.path"
         class="bg-grey-lighten-2 mx-1"
+        style="max-width: 125px"
         loading="lazy"
         decoding="async"
         width="125"

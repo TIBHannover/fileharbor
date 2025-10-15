@@ -101,8 +101,12 @@ const binned = computed(() => {
 })
 
 const marginLeft = computed(() => {
-  return d3.max(binned.value, d => d.name.length) * 6.5
+  return d3.max(binned.value, d => Math.min(d.name.length, 25)) * 6.5
 })
+
+function truncateLabel(s, max = 25) {
+  return s.length > max ? s.slice(0, max - 1) + '…' : s
+}
 
 function render(width, height, data) {
   xScale = d3.scaleLinear()
@@ -163,6 +167,7 @@ function render(width, height, data) {
 
   const axis = d3.axisLeft(yScale)
     .tickSizeOuter(0)
+    .tickFormat(d => truncateLabel(d, 25))
 
   d3.select(axisEl.value).call(axis)
 }

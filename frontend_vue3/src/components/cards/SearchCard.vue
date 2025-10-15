@@ -12,7 +12,7 @@
       @keydown.space.prevent="openDialog"
     >
       <img
-        :src="item.path"
+        :src="item.images[0].preview"
         :alt="titles[0]"
         loading="lazy"
         decoding="async"
