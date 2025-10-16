@@ -38,16 +38,15 @@ class Manager:
             plugin_has_config = False
             plugin_config = {"params": {}}
             for x in configs:
-                # print("############", flush=True)
-                # print(x, flush=True)
-                # print("############", flush=True)
                 if x["type"].lower() == plugin_name.lower():
                     plugin_config.update(x)
                     plugin_has_config = True
             if not plugin_has_config:
                 continue
             plugin = plugin_class(config=plugin_config["params"])
-            plugin_list.append({"plugin": plugin, "plugin_cls": plugin_class, "config": plugin_config})
+            plugin_list.append(
+                {"plugin": plugin, "plugin_cls": plugin_class, "config": plugin_config}
+            )
         return plugin_list
 
     def build_plugin_list(self, plugins=None, configs=None):
@@ -67,15 +66,16 @@ class Manager:
             plugin_has_config = False
             plugin_config = {"params": {}}
             for x in configs:
-                # print("############", flush=True)
-                # print(x, flush=True)
-                # print("############", flush=True)
                 if x["type"].lower() == plugin_name.lower():
                     plugin_config.update(x)
                     plugin_has_config = True
             if not plugin_has_config:
                 continue
             plugin_list.append(
-                {"plugin_key": plugin_name, "plugin_cls": plugin_class, "config": plugin_config["params"]}
+                {
+                    "plugin_key": plugin_name,
+                    "plugin_cls": plugin_class,
+                    "config": plugin_config["params"],
+                }
             )
         return plugin_list

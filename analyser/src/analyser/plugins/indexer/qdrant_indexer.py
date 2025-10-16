@@ -22,7 +22,6 @@ default_version = 0.1
 
 @IndexerFactory.export("QDrantIndexer")
 class QDrantIndexer(IndexerPlugin):
-
     def __init__(self, **kwargs):
         super(QDrantIndexer, self).__init__(**kwargs)
 
@@ -93,7 +92,7 @@ class QDrantIndexer(IndexerPlugin):
         logging.info(f"[QDrantIndexer]: add_points")
         # for k, v in points[0].get("features", {}).items():
         #     logging.error(f"{k}, {len(v)}, {v}")
-        logging.info(f"X: {[x.get("meta",{}) for x in points]}")
+        logging.info(f"X: {[x.get('meta', {}) for x in points]}")
         self.client.upsert(
             collection_name=collection_name,
             points=[
@@ -106,16 +105,12 @@ class QDrantIndexer(IndexerPlugin):
             ],
         )
 
-    def search(self, queries, filters, size=100):
-        print("##########################", flush=True)
-        print("##########################", flush=True)
-        print("##########################", flush=True)
-        print(f"{queries}", flush=True)
+    def search(self, queries, filters, size=5):
         results = []
 
         must = [
             models.FieldCondition(
-                key=f["field"], match=models.MatchValue(value=f["query"])
+                key=f'"{f["field"]}"', match=models.MatchValue(value=f["query"])
             )
             for f in filters
             if f["flag"] == "MUST"
@@ -124,7 +119,7 @@ class QDrantIndexer(IndexerPlugin):
             must = None
         should = [
             models.FieldCondition(
-                key=f["field"], match=models.MatchValue(value=f["query"])
+                key=f'"{f["field"]}"', match=models.MatchValue(value=f["query"])
             )
             for f in filters
             if f["flag"] == "SHOULD"
@@ -133,7 +128,7 @@ class QDrantIndexer(IndexerPlugin):
             should = None
         must_not = [
             models.FieldCondition(
-                key=f["field"], match=models.MatchValue(value=f["query"])
+                key=f'"{f["field"]}"', match=models.MatchValue(value=f["query"])
             )
             for f in filters
             if f["flag"] == "NOT"
@@ -141,10 +136,30 @@ class QDrantIndexer(IndexerPlugin):
         if len(must_not) == 0:
             must_not = None
 
-        for q in queries:
-            print(
-                models.NamedVector(name=q["index_name"], vector=q["value"]), flush=True
+        if len(queries) == 0:
+            result = self.client.scroll(
+                collection_name="default",
+                scroll_filter=models.Filter(
+                    must=must, should=should, must_not=must_not
+                ),
+                limit=size,
+                with_payload=True,
+                with_vectors=True,
             )
+
+            count = 0
+            for x in result[0]:
+                results.append(
+                    {
+                        "id": uuid.UUID(x.id).hex,
+                        "meta": x.payload,
+                        "score": 1,
+                        "features": [],
+                    }
+                )
+                count += 1
+
+        for i, q in enumerate(queries):
             result = self.client.search(
                 collection_name="default",
                 query_vector=models.NamedVector(
@@ -155,20 +170,17 @@ class QDrantIndexer(IndexerPlugin):
                 with_payload=True,
                 with_vectors=True,
             )
-            print(
-                f"************** {q} :::: {result[-1]} *******************", flush=True
-            )
-            results.extend(
-                [
+            count = 0
+            for x in result:
+                results.append(
                     {
                         "id": uuid.UUID(x.id).hex,
                         "meta": x.payload,
                         "score": x.score * q.get("weight", 1.0),
                         "features": [],
                     }
-                    for x in result
-                ]
-            )
+                )
+                count += 1
 
         results = sorted(results, key=lambda x: -x["score"])
 

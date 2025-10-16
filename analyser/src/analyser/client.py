@@ -566,7 +566,7 @@ class Client:
                 else:
                     print(e)
 
-            time.sleep(0.1)
+            time.sleep(1.0)
 
         return {"error"}
 

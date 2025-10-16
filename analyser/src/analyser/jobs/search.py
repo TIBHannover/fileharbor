@@ -44,7 +44,6 @@ class SearchJob:
         return result_list
 
     def search_collection(self, query, collection):
-
         collection_manager = self.shared_object.indexer_plugin_manager
 
         indexing_plugin_mappings = collection_manager.get_indexing_plugin_mappings(
@@ -57,19 +56,13 @@ class SearchJob:
 
         payload_mapping = collection_manager.get_payload_mapping(collection)
 
-        print(f"indexing_plugin_mappings {indexing_plugin_mappings}", flush=True)
-        print(f"search_plugin_mappings {search_plugin_mappings}", flush=True)
-        print(f"payload_mapping {payload_mapping}", flush=True)
-        print(f"query {query}", flush=True)
-
         filters = []
+        feature_list = []
         for term in query.terms:
-
             term_type = term.WhichOneof("term")
             logging.error(term)
 
             if term_type == "text":
-
                 flag = "MUST"
                 if term.text.flag == searcher_pb2.TextSearchTerm.SHOULD:
                     flag = "SHOULD"
@@ -98,26 +91,15 @@ class SearchJob:
                             search_plugin_mapping.index_name
                             not in requested_index_names
                         ):
-                            print(
-                                f"SKIP {search_plugin_mapping.index_name} ::: {requested_index_names} ::: {vector_term.vector_indexes} ::: {search_plugin_mapping}",
-                                flush=True,
-                            )
                             continue
-                    print(f"FIELD {search_plugin_mapping}", flush=True)
                     for field in search_plugin_mapping.fields:
-                        print(f"FIELD {field}")
                         for name, data in data_dict.items():
                             if fnmatch(name, field):
-
                                 data_plugin_mapping.append(
                                     (search_plugin_mapping, name, data)
                                 )
-                print(f"data_dict {data_dict}", flush=True)
-                print(f"term {term}", flush=True)
-                print(f"data_plugin_mapping {data_plugin_mapping}", flush=True)
-                feature_list = []
+
                 for data_plugin in data_plugin_mapping:
-                    print(f"++++++++++++++++++++++++ S {data_plugin}", flush=True)
                     data = data_plugin[2]
                     index_name = data_plugin[0].index_name
 
@@ -147,16 +129,13 @@ class SearchJob:
                     feature_list.append(
                         {"index_name": index_name, "value": feature_vecs}
                     )
-
-            result = self.shared_object.indexer_plugin_manager.search(
-                collection_name=collection, queries=feature_list, filters=filters
-            )
-            logging.info(f"Result: {len(result)}")
-            return result
+        result = self.shared_object.indexer_plugin_manager.search(
+            collection_name=collection, queries=feature_list, filters=filters
+        )
+        return result
 
     def __call__(self, query):
         # TODO customize the indexing path and plugin behind it
-        logging.error(query)
 
         request = ParseDict(query["request"], searcher_pb2.SearchRequest())
 
@@ -184,15 +163,12 @@ class SearchJob:
             with self.shared_object.data_manager.load(x["id"]) as list_data:
                 for name, data in list_data:
                     with data as data:
-                        print(data, flush=True)
-
                         pb_data = entry.data.add()
                         pb_data.CopyFrom(data.to_proto())
 
                         data_type = pb_data.WhichOneof("data")
                         if data_type == "text":
                             if match := re.match(r"^(.*)\/_(.{2})$", name):
-
                                 pb_data.name = match.group(1)
                                 pb_data.text.language = match.group(2)
                             else:

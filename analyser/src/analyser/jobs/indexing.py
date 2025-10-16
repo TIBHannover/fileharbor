@@ -38,12 +38,9 @@ class IndexingJob:
 
         payload_mapping = collection_manager.get_payload_mapping(collection_name)
 
-        print("########################", args["points_list"], flush=True)
         try:
-
             for i, point in enumerate(args["points_list"]):
                 with self.shared_object.data_manager.load(point) as point:
-
                     logging.info(f"{i} {point.id}")
 
                     data_dict = {}
@@ -66,7 +63,6 @@ class IndexingJob:
                     meta_dict = {}
                     for field in payload_mapping.fields:
                         for name, data in scalar_dict.items():
-
                             if fnmatch(name, field):
                                 meta_dict[name] = data
 
@@ -76,7 +72,6 @@ class IndexingJob:
                         for field in indexing_plugin_mapping.fields:
                             for name, data in data_dict.items():
                                 if fnmatch(name, field):
-
                                     data_plugin_mapping.append(
                                         (indexing_plugin_mapping, name, data)
                                     )
@@ -132,7 +127,6 @@ class IndexingJob:
 
             return
         except Exception as e:
-
             # raise e
             logging.error(f"[Analyser] {e}")
             exc_type, exc_value, exc_traceback = sys.exc_info()

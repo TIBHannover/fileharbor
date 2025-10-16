@@ -9,7 +9,6 @@ from analyser.plugins.compute_plugin import ComputePluginManager
 
 
 class IndexerPlugin(Plugin):
-
     def __init__(self, **kwargs):
         super(IndexerPlugin, self).__init__(**kwargs)
 
@@ -51,7 +50,6 @@ class PayloadMapping:
 
 
 class IndexerPluginManager:
-
     def __init__(
         self,
         config: Dict,
@@ -76,7 +74,6 @@ class IndexerPluginManager:
         # target_index_configuration,
         # current_index_configuration=None,
     ):
-
         # check what the configuration wants
         target_index_configuration = []
         for indexing_plugin in index.get("indexing_plugin", []):
@@ -114,25 +111,24 @@ class IndexerPluginManager:
             if x["name"] in current_index_configuration:
                 if x["size"] != current_index_configuration[x["name"]]:
                     logging.error(
-                        f'Size different between existing index and configuration for index "{x['name']}" ({x['size']} vs {current_index_configuration[x['name']]}).'
+                        f'Size different between existing index and configuration for index "{x["name"]}" ({x["size"]} vs {current_index_configuration[x["name"]]}).'
                     )
                     match = False
 
             else:
                 logging.error(
-                    f'Target index "{x['name']}" didn\'t exists in current collection.'
+                    f'Target index "{x["name"]}" didn\'t exists in current collection.'
                 )
                 match = False
 
         if not match:
             logging.error(
-                f'Target index "{x['name']}" is not compatible with the existing index'
+                f'Target index "{x["name"]}" is not compatible with the existing index'
             )
             # TODO fix
             exit(-1)
 
     def check_and_init_indexes(self):
-
         # Build an dict with index name to indexer plugin and config
         self.indexes = {}
         for index in self.config.get("index", []):
@@ -252,7 +248,6 @@ class IndexerPluginManager:
         )
         if status is True:
             del self.indexes[collection_name]
-        print("Status", status, flush=True)
         return status
 
     def search(
@@ -271,6 +266,4 @@ class IndexerPluginManager:
             return None
 
         results = self.indexes[collection_name]["indexer_plugin"].search(**kwargs)
-        print(results, flush=True)
-        print("##########")
         return results
