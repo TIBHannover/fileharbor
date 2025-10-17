@@ -39,6 +39,8 @@ class Search(RPCView):
 
         print(params, flush=True)
 
+        grpc_request.include_fields.extend(["meta/title*", "meta/creator*", "image"])
+
         for _, v in params.get("filters", {}).items():
             for x in v["name"]:
                 term = grpc_request.terms.add()

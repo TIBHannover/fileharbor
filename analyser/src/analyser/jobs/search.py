@@ -159,6 +159,9 @@ class SearchJob:
 
         results = self.reranking(results)
 
+        for x in request.include_fields:
+            print(x)
+
         proto_results = searcher_pb2.ListSearchResultReply()
         for x in results:
             entry = proto_results.entries.add()
@@ -166,15 +169,24 @@ class SearchJob:
             with self.shared_object.data_manager.load(x["id"]) as list_data:
                 for name, data in list_data:
                     with data as data:
-                        pb_data = entry.data.add()
-                        pb_data.CopyFrom(data.to_proto())
+                        to_include = False
+                        if len(request.include_fields) == 0:
+                            to_include = True
+                        for x in request.include_fields:
+                            print(f"{name} {x} {fnmatch(name, x)}", flush=True)
+                            if fnmatch(name, x):
+                                to_include = True
 
-                        data_type = pb_data.WhichOneof("data")
-                        if data_type == "text":
-                            if match := re.match(r"^(.*)\/_(.{2})$", name):
-                                pb_data.name = match.group(1)
-                                pb_data.text.language = match.group(2)
-                            else:
-                                pb_data.name = name
+                        if to_include:
+                            pb_data = entry.data.add()
+                            pb_data.CopyFrom(data.to_proto())
+
+                            data_type = pb_data.WhichOneof("data")
+                            if data_type == "text":
+                                if match := re.match(r"^(.*)\/_(.{2})$", name):
+                                    pb_data.name = match.group(1)
+                                    pb_data.text.language = match.group(2)
+                                else:
+                                    pb_data.name = name
 
         return MessageToDict(proto_results)

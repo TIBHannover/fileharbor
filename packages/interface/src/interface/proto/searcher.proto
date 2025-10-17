@@ -148,6 +148,7 @@ message SearchRequest {
   repeated string collections = 10;
   bool include_default_collection = 11;
   repeated string ids = 12;
+  repeated string include_fields = 13;
 }
 
 message SearchReply { string id = 1; }
