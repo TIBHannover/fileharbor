@@ -159,9 +159,6 @@ class SearchJob:
 
         results = self.reranking(results)
 
-        for x in request.include_fields:
-            print(x)
-
         proto_results = searcher_pb2.ListSearchResultReply()
         for x in results:
             entry = proto_results.entries.add()
@@ -169,15 +166,16 @@ class SearchJob:
             with self.shared_object.data_manager.load(x["id"]) as list_data:
                 for name, data in list_data:
                     with data as data:
+                        # check if we should filter the results
                         to_include = False
                         if len(request.include_fields) == 0:
                             to_include = True
                         for x in request.include_fields:
-                            print(f"{name} {x} {fnmatch(name, x)}", flush=True)
                             if fnmatch(name, x):
                                 to_include = True
 
                         if to_include:
+                            # copy the data stored in Data to the proto response
                             pb_data = entry.data.add()
                             pb_data.CopyFrom(data.to_proto())
 
