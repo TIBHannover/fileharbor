@@ -178,13 +178,13 @@ class SearchJob:
                             # copy the data stored in Data to the proto response
                             pb_data = entry.data.add()
                             pb_data.CopyFrom(data.to_proto())
+                            pb_data.name = name
 
                             data_type = pb_data.WhichOneof("data")
+
                             if data_type == "text":
                                 if match := re.match(r"^(.*)\/_(.{2})$", name):
                                     pb_data.name = match.group(1)
                                     pb_data.text.language = match.group(2)
-                                else:
-                                    pb_data.name = name
 
         return MessageToDict(proto_results)
