@@ -55,12 +55,12 @@ class QDrantIndexer(IndexerPlugin):
 
         return results
 
-    def create_collection(self, name, indexes: List[Dict]):
-        logging.info(f"[QDrantIndexer]: create_collection")
+    def create_collection(self, name, indexes: List[Dict]) -> bool:
+        logging.info(f"[QDrantIndexer::create_collection] call")
 
         # TODO add lock here
 
-        self.client.create_collection(
+        result = self.client.create_collection(
             collection_name=name,
             vectors_config={
                 x["name"]: models.VectorParams(
@@ -80,6 +80,8 @@ class QDrantIndexer(IndexerPlugin):
                 ),
             ),
         )
+        if not result:
+            logging.error("[QDrantIndexer::create_collection] error")
 
     def delete_collection(self, collection_name):
         # TODO add lock here
@@ -93,7 +95,7 @@ class QDrantIndexer(IndexerPlugin):
         # for k, v in points[0].get("features", {}).items():
         #     logging.error(f"{k}, {len(v)}, {v}")
         logging.info(f"X: {[x.get('meta', {}) for x in points]}")
-        self.client.upsert(
+        result = self.client.upsert(
             collection_name=collection_name,
             points=[
                 models.PointStruct(
@@ -105,7 +107,7 @@ class QDrantIndexer(IndexerPlugin):
             ],
         )
 
-    def search(self, queries, filters, size=5):
+    def search(self, queries, filters, size=100):
         results = []
 
         must = [

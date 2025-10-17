@@ -30,6 +30,8 @@ message TextSearchTerm {
   }
 
   Flag flag = 3;
+
+  string language = 4;
 }
 
 message NumberSearchTerm {

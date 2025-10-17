@@ -37,6 +37,16 @@ class Search(RPCView):
     def parse_search_request(self, params, ids=None, collection_ids=None):
         grpc_request = searcher_pb2.SearchRequest()
 
+        print(params, flush=True)
+
+        for _, v in params.get("filters", {}).items():
+            for x in v["name"]:
+                term = grpc_request.terms.add()
+                term.text.query = x
+                term.text.field = v["field"]
+                term.text.language = "en"
+                term.text.flag = searcher_pb2.TextSearchTerm.MUST
+
         if params.get("query") and params.get("modality"):
             params.setdefault("queries", [])
             params["queries"].append(
@@ -313,7 +323,6 @@ class Search(RPCView):
             entries = []
 
             for e in response.entries:
-
                 entry = {
                     "id": e.id,
                     "meta": [],
@@ -331,7 +340,6 @@ class Search(RPCView):
                     data_type = data.WhichOneof("data")
 
                     if data_type == "bool":
-
                         entry["meta"].append(
                             {
                                 "name": data.name,
@@ -340,7 +348,6 @@ class Search(RPCView):
                             }
                         )
                     elif data_type == "int":
-
                         entry["meta"].append(
                             {
                                 "name": data.name,
@@ -350,7 +357,6 @@ class Search(RPCView):
                         )
 
                     elif data_type in "float":
-
                         entry["meta"].append(
                             {
                                 "name": data.name,
@@ -359,7 +365,6 @@ class Search(RPCView):
                             }
                         )
                     elif data_type == "text":
-
                         entry["meta"].append(
                             {
                                 "name": data.name,
@@ -369,7 +374,6 @@ class Search(RPCView):
                             }
                         )
                     elif data_type == "image":
-
                         entry["images"].append(
                             {
                                 "path": media_url_to_image(data.id),
@@ -442,7 +446,6 @@ class Search(RPCView):
         return result
 
     def post(self, request, format=None):
-
         # logging.error("FOO__", flush=True)
         params = request.data["params"]
         collections = None

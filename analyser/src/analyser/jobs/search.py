@@ -63,14 +63,17 @@ class SearchJob:
             logging.error(term)
 
             if term_type == "text":
+                if len(term.text.language) == 0:
+                    field = term.text.field
+                else:
+                    field = f"{term.text.field}/_{term.text.language}"
+
                 flag = "MUST"
                 if term.text.flag == searcher_pb2.TextSearchTerm.SHOULD:
                     flag = "SHOULD"
                 if term.text.flag == searcher_pb2.TextSearchTerm.NOT:
                     flag = "NOT"
-                filters.append(
-                    {"field": term.text.field, "query": term.text.query, "flag": flag}
-                )
+                filters.append({"field": field, "query": term.text.query, "flag": flag})
 
             if term_type == "vector":
                 vector_term = term.vector
