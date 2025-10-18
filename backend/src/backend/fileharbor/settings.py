@@ -27,8 +27,18 @@ DEBUG = True
 # FORCE_SCRIPT_NAME = "/"
 FORCE_SCRIPT_NAME = "/"
 
-ALLOWED_HOSTS = ["localhost"]
-CSRF_TRUSTED_ORIGINS = ["http://localhost", "https://localhost"]
+ALLOWED_HOSTS = [
+    "localhost",
+    "localhost:8080",
+    "http://localhost:8080",
+    "http://localhost",
+]
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost",
+    "http://localhost:8080",
+    "https://localhost",
+    "https://localhost:8080",
+]
 
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
@@ -194,8 +204,8 @@ MEDIA_ROOT = os.path.join("/data/media/")
 UPLOAD_ROOT = os.path.join("/data/upload/")
 IMAGE_EXT = "jpg"
 
-MEDIA_URL = "http://localhost/" + "media/"
-UPLOAD_URL = "http://localhost/" + "upload/"
+MEDIA_URL = FORCE_SCRIPT_NAME + "media/"
+UPLOAD_URL = FORCE_SCRIPT_NAME + "upload/"
 
 GRPC_HOST = "analyser"
 GRPC_PORT = 50051

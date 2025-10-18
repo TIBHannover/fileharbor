@@ -133,7 +133,10 @@ class SearchJob:
                         {"index_name": index_name, "value": feature_vecs}
                     )
         result = self.shared_object.indexer_plugin_manager.search(
-            collection_name=collection, queries=feature_list, filters=filters
+            collection_name=collection,
+            queries=feature_list,
+            filters=filters,
+            size=getattr(query, "limit", 100),
         )
         return result
 

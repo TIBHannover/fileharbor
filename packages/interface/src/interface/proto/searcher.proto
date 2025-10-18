@@ -35,7 +35,6 @@ message TextSearchTerm {
 }
 
 message NumberSearchTerm {
-
   string field = 1;
 
   oneof query {
@@ -116,20 +115,12 @@ message SearchRequest {
     SORTING_RANDOM_FEATURE = 4;
     SORTING_RANDOM_CLUSTER = 5;
   }
+  Sorting sorting = 2;
 
   enum Mapping {
     MAPPING_DEFAULT = 0;
     MAPPING_UMAP = 1;
   }
-
-  enum Clustering {
-    CLUSTERING_DEFAULT = 0;
-    CLUSTERING_GM = 1;
-    CLUSTERING_KMEANS = 2;
-    CLUSTERING_AGGLOMERATIVE = 3;
-  }
-
-  Sorting sorting = 2;
   Mapping mapping = 3;
 
   // AggregateRequest aggregate = 4;
@@ -138,17 +129,28 @@ message SearchRequest {
   enum Extra {
     EXTRA_FEATURES = 0;
   }
-
   repeated Extra extras = 6;
 
   repeated ValueField mapping_options = 7;
 
+  enum Clustering {
+    CLUSTERING_DEFAULT = 0;
+    CLUSTERING_GM = 1;
+    CLUSTERING_KMEANS = 2;
+    CLUSTERING_AGGLOMERATIVE = 3;
+  }
   Clustering clustering = 8;
+
   repeated ValueField clustering_options = 9;
   repeated string collections = 10;
   bool include_default_collection = 11;
   repeated string ids = 12;
+
+  // Fields to include in the returned search results
   repeated string include_fields = 13;
+
+  // Maximum number of results to return
+  int64 limit = 14;
 }
 
 message SearchReply { string id = 1; }

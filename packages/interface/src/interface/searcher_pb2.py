@@ -4,15 +4,18 @@
 # source: searcher.proto
 # Protobuf Python Version: 5.29.0
 """Generated protocol buffer code."""
-
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
-
 _runtime_version.ValidateProtobufRuntimeVersion(
-    _runtime_version.Domain.PUBLIC, 5, 29, 0, "", "searcher.proto"
+    _runtime_version.Domain.PUBLIC,
+    5,
+    29,
+    0,
+    '',
+    'searcher.proto'
 )
 # @@protoc_insertion_point(imports)
 
@@ -24,60 +27,58 @@ from . import common_pb2 as common__pb2
 from . import collection_pb2 as collection__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n\x0esearcher.proto\x12\nfileharbor\x1a\ndata.proto\x1a\x0c\x63ommon.proto\x1a\x10\x63ollection.proto"\x96\x01\n\x0eTextSearchTerm\x12\r\n\x05query\x18\x01 \x01(\t\x12\r\n\x05\x66ield\x18\x02 \x01(\t\x12-\n\x04\x66lag\x18\x03 \x01(\x0e\x32\x1f.fileharbor.TextSearchTerm.Flag\x12\x10\n\x08language\x18\x04 \x01(\t"%\n\x04\x46lag\x12\x08\n\x04MUST\x10\x00\x12\n\n\x06SHOULD\x10\x01\x12\x07\n\x03NOT\x10\x02"\xc7\x02\n\x10NumberSearchTerm\x12\r\n\x05\x66ield\x18\x01 \x01(\t\x12\x16\n\x0cstring_query\x18\x02 \x01(\tH\x00\x12\x13\n\tint_query\x18\x03 \x01(\x05H\x00\x12\x15\n\x0b\x66loat_query\x18\x04 \x01(\x02H\x00\x12\x37\n\x08relation\x18\x05 \x01(\x0e\x32%.fileharbor.NumberSearchTerm.Relation\x12/\n\x04\x66lag\x18\x06 \x01(\x0e\x32!.fileharbor.NumberSearchTerm.Flag"F\n\x08Relation\x12\x06\n\x02\x45Q\x10\x00\x12\x0b\n\x07GREATER\x10\x01\x12\x0e\n\nGREATER_EQ\x10\x02\x12\x0b\n\x07LESS_EQ\x10\x03\x12\x08\n\x04LESS\x10\x04"%\n\x04\x46lag\x12\x08\n\x04MUST\x10\x00\x12\n\n\x06SHOULD\x10\x01\x12\x07\n\x03NOT\x10\x02\x42\x07\n\x05query"7\n\x17PluginVectorSearchIndex\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06weight\x18\x02 \x01(\x02"\xd8\x01\n\x16PluginVectorSearchTerm\x12&\n\x07\x61nalyse\x18\x01 \x01(\x0b\x32\x15.fileharbor.PluginRun\x12;\n\x0evector_indexes\x18\x04 \x03(\x0b\x32#.fileharbor.PluginVectorSearchIndex\x12\x35\n\x04\x66lag\x18\x05 \x01(\x0e\x32\'.fileharbor.PluginVectorSearchTerm.Flag""\n\x04\x46lag\x12\x0c\n\x08POSITIVE\x10\x00\x12\x0c\n\x08NEGATIVE\x10\x01"\xc6\x01\n\x10VectorSearchTerm\x12 \n\x06inputs\x18\x01 \x03(\x0b\x32\x10.fileharbor.Data\x12;\n\x0evector_indexes\x18\x04 \x03(\x0b\x32#.fileharbor.PluginVectorSearchIndex\x12/\n\x04\x66lag\x18\x05 \x01(\x0e\x32!.fileharbor.VectorSearchTerm.Flag""\n\x04\x46lag\x12\x0c\n\x08POSITIVE\x10\x00\x12\x0c\n\x08NEGATIVE\x10\x01"\xdd\x01\n\nSearchTerm\x12*\n\x04text\x18\x01 \x01(\x0b\x32\x1a.fileharbor.TextSearchTermH\x00\x12.\n\x06number\x18\x02 \x01(\x0b\x32\x1c.fileharbor.NumberSearchTermH\x00\x12;\n\rplugin_vector\x18\x03 \x01(\x0b\x32".fileharbor.PluginVectorSearchTermH\x00\x12.\n\x06vector\x18\x04 \x01(\x0b\x32\x1c.fileharbor.VectorSearchTermH\x00\x42\x06\n\x04term"C\n\x10\x41ggregateRequest\x12\x0e\n\x06\x66ields\x18\x01 \x03(\t\x12\x0c\n\x04size\x18\x02 \x01(\x05\x12\x11\n\tuse_query\x18\x03 \x01(\x08"\xb8\x06\n\rSearchRequest\x12%\n\x05terms\x18\x01 \x03(\x0b\x32\x16.fileharbor.SearchTerm\x12\x32\n\x07sorting\x18\x02 \x01(\x0e\x32!.fileharbor.SearchRequest.Sorting\x12\x32\n\x07mapping\x18\x03 \x01(\x0e\x32!.fileharbor.SearchRequest.Mapping\x12\x13\n\x0brandom_seed\x18\x05 \x01(\t\x12/\n\x06\x65xtras\x18\x06 \x03(\x0e\x32\x1f.fileharbor.SearchRequest.Extra\x12/\n\x0fmapping_options\x18\x07 \x03(\x0b\x32\x16.fileharbor.ValueField\x12\x38\n\nclustering\x18\x08 \x01(\x0e\x32$.fileharbor.SearchRequest.Clustering\x12\x32\n\x12\x63lustering_options\x18\t \x03(\x0b\x32\x16.fileharbor.ValueField\x12\x13\n\x0b\x63ollections\x18\n \x03(\t\x12"\n\x1ainclude_default_collection\x18\x0b \x01(\x08\x12\x0b\n\x03ids\x18\x0c \x03(\t\x12\x16\n\x0einclude_fields\x18\r \x03(\t"\x97\x01\n\x07Sorting\x12\x13\n\x0fSORTING_DEFAULT\x10\x00\x12\x16\n\x12SORTING_CLASSIFIER\x10\x01\x12\x13\n\x0fSORTING_FEATURE\x10\x02\x12\x12\n\x0eSORTING_RANDOM\x10\x03\x12\x1a\n\x16SORTING_RANDOM_FEATURE\x10\x04\x12\x1a\n\x16SORTING_RANDOM_CLUSTER\x10\x05"0\n\x07Mapping\x12\x13\n\x0fMAPPING_DEFAULT\x10\x00\x12\x10\n\x0cMAPPING_UMAP\x10\x01"l\n\nClustering\x12\x16\n\x12\x43LUSTERING_DEFAULT\x10\x00\x12\x11\n\rCLUSTERING_GM\x10\x01\x12\x15\n\x11\x43LUSTERING_KMEANS\x10\x02\x12\x1c\n\x18\x43LUSTERING_AGGLOMERATIVE\x10\x03"\x1b\n\x05\x45xtra\x12\x12\n\x0e\x45XTRA_FEATURES\x10\x00"\x19\n\x0bSearchReply\x12\n\n\x02id\x18\x01 \x01(\t"\x87\x01\n\x11SearchResultEntry\x12\n\n\x02id\x18\x01 \x01(\t\x12\x13\n\x0b\x63oordinates\x18\x06 \x03(\x02\x12\x0f\n\x07\x63luster\x18\x07 \x01(\x03\x12\x10\n\x08\x64istance\x18\x08 \x01(\x02\x12\x0e\n\x06padded\x18\n \x01(\x08\x12\x1e\n\x04\x64\x61ta\x18\x0c \x03(\x0b\x32\x10.fileharbor.Data"N\n\x0f\x41ggregateResult\x12\x12\n\nfield_name\x18\x01 \x01(\t\x12\'\n\x07\x65ntries\x18\x02 \x03(\x0b\x32\x16.fileharbor.ValueField"%\n\x17ListSearchResultRequest\x12\n\n\x02id\x18\x01 \x01(\t"w\n\x15ListSearchResultReply\x12.\n\x07\x65ntries\x18\x01 \x03(\x0b\x32\x1d.fileharbor.SearchResultEntry\x12.\n\taggregate\x18\x02 \x03(\x0b\x32\x1b.fileharbor.AggregateResult2\xaa\x01\n\x08Searcher\x12>\n\x06search\x12\x19.fileharbor.SearchRequest\x1a\x17.fileharbor.SearchReply"\x00\x12^\n\x12list_search_result\x12#.fileharbor.ListSearchResultRequest\x1a!.fileharbor.ListSearchResultReply"\x00\x42\x02P\x01\x62\x06proto3'
-)
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0esearcher.proto\x12\nfileharbor\x1a\ndata.proto\x1a\x0c\x63ommon.proto\x1a\x10\x63ollection.proto\"\x96\x01\n\x0eTextSearchTerm\x12\r\n\x05query\x18\x01 \x01(\t\x12\r\n\x05\x66ield\x18\x02 \x01(\t\x12-\n\x04\x66lag\x18\x03 \x01(\x0e\x32\x1f.fileharbor.TextSearchTerm.Flag\x12\x10\n\x08language\x18\x04 \x01(\t\"%\n\x04\x46lag\x12\x08\n\x04MUST\x10\x00\x12\n\n\x06SHOULD\x10\x01\x12\x07\n\x03NOT\x10\x02\"\xc7\x02\n\x10NumberSearchTerm\x12\r\n\x05\x66ield\x18\x01 \x01(\t\x12\x16\n\x0cstring_query\x18\x02 \x01(\tH\x00\x12\x13\n\tint_query\x18\x03 \x01(\x05H\x00\x12\x15\n\x0b\x66loat_query\x18\x04 \x01(\x02H\x00\x12\x37\n\x08relation\x18\x05 \x01(\x0e\x32%.fileharbor.NumberSearchTerm.Relation\x12/\n\x04\x66lag\x18\x06 \x01(\x0e\x32!.fileharbor.NumberSearchTerm.Flag\"F\n\x08Relation\x12\x06\n\x02\x45Q\x10\x00\x12\x0b\n\x07GREATER\x10\x01\x12\x0e\n\nGREATER_EQ\x10\x02\x12\x0b\n\x07LESS_EQ\x10\x03\x12\x08\n\x04LESS\x10\x04\"%\n\x04\x46lag\x12\x08\n\x04MUST\x10\x00\x12\n\n\x06SHOULD\x10\x01\x12\x07\n\x03NOT\x10\x02\x42\x07\n\x05query\"7\n\x17PluginVectorSearchIndex\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06weight\x18\x02 \x01(\x02\"\xd8\x01\n\x16PluginVectorSearchTerm\x12&\n\x07\x61nalyse\x18\x01 \x01(\x0b\x32\x15.fileharbor.PluginRun\x12;\n\x0evector_indexes\x18\x04 \x03(\x0b\x32#.fileharbor.PluginVectorSearchIndex\x12\x35\n\x04\x66lag\x18\x05 \x01(\x0e\x32\'.fileharbor.PluginVectorSearchTerm.Flag\"\"\n\x04\x46lag\x12\x0c\n\x08POSITIVE\x10\x00\x12\x0c\n\x08NEGATIVE\x10\x01\"\xc6\x01\n\x10VectorSearchTerm\x12 \n\x06inputs\x18\x01 \x03(\x0b\x32\x10.fileharbor.Data\x12;\n\x0evector_indexes\x18\x04 \x03(\x0b\x32#.fileharbor.PluginVectorSearchIndex\x12/\n\x04\x66lag\x18\x05 \x01(\x0e\x32!.fileharbor.VectorSearchTerm.Flag\"\"\n\x04\x46lag\x12\x0c\n\x08POSITIVE\x10\x00\x12\x0c\n\x08NEGATIVE\x10\x01\"\xdd\x01\n\nSearchTerm\x12*\n\x04text\x18\x01 \x01(\x0b\x32\x1a.fileharbor.TextSearchTermH\x00\x12.\n\x06number\x18\x02 \x01(\x0b\x32\x1c.fileharbor.NumberSearchTermH\x00\x12;\n\rplugin_vector\x18\x03 \x01(\x0b\x32\".fileharbor.PluginVectorSearchTermH\x00\x12.\n\x06vector\x18\x04 \x01(\x0b\x32\x1c.fileharbor.VectorSearchTermH\x00\x42\x06\n\x04term\"C\n\x10\x41ggregateRequest\x12\x0e\n\x06\x66ields\x18\x01 \x03(\t\x12\x0c\n\x04size\x18\x02 \x01(\x05\x12\x11\n\tuse_query\x18\x03 \x01(\x08\"\xc7\x06\n\rSearchRequest\x12%\n\x05terms\x18\x01 \x03(\x0b\x32\x16.fileharbor.SearchTerm\x12\x32\n\x07sorting\x18\x02 \x01(\x0e\x32!.fileharbor.SearchRequest.Sorting\x12\x32\n\x07mapping\x18\x03 \x01(\x0e\x32!.fileharbor.SearchRequest.Mapping\x12\x13\n\x0brandom_seed\x18\x05 \x01(\t\x12/\n\x06\x65xtras\x18\x06 \x03(\x0e\x32\x1f.fileharbor.SearchRequest.Extra\x12/\n\x0fmapping_options\x18\x07 \x03(\x0b\x32\x16.fileharbor.ValueField\x12\x38\n\nclustering\x18\x08 \x01(\x0e\x32$.fileharbor.SearchRequest.Clustering\x12\x32\n\x12\x63lustering_options\x18\t \x03(\x0b\x32\x16.fileharbor.ValueField\x12\x13\n\x0b\x63ollections\x18\n \x03(\t\x12\"\n\x1ainclude_default_collection\x18\x0b \x01(\x08\x12\x0b\n\x03ids\x18\x0c \x03(\t\x12\x16\n\x0einclude_fields\x18\r \x03(\t\x12\r\n\x05limit\x18\x0e \x01(\x03\"\x97\x01\n\x07Sorting\x12\x13\n\x0fSORTING_DEFAULT\x10\x00\x12\x16\n\x12SORTING_CLASSIFIER\x10\x01\x12\x13\n\x0fSORTING_FEATURE\x10\x02\x12\x12\n\x0eSORTING_RANDOM\x10\x03\x12\x1a\n\x16SORTING_RANDOM_FEATURE\x10\x04\x12\x1a\n\x16SORTING_RANDOM_CLUSTER\x10\x05\"0\n\x07Mapping\x12\x13\n\x0fMAPPING_DEFAULT\x10\x00\x12\x10\n\x0cMAPPING_UMAP\x10\x01\"\x1b\n\x05\x45xtra\x12\x12\n\x0e\x45XTRA_FEATURES\x10\x00\"l\n\nClustering\x12\x16\n\x12\x43LUSTERING_DEFAULT\x10\x00\x12\x11\n\rCLUSTERING_GM\x10\x01\x12\x15\n\x11\x43LUSTERING_KMEANS\x10\x02\x12\x1c\n\x18\x43LUSTERING_AGGLOMERATIVE\x10\x03\"\x19\n\x0bSearchReply\x12\n\n\x02id\x18\x01 \x01(\t\"\x87\x01\n\x11SearchResultEntry\x12\n\n\x02id\x18\x01 \x01(\t\x12\x13\n\x0b\x63oordinates\x18\x06 \x03(\x02\x12\x0f\n\x07\x63luster\x18\x07 \x01(\x03\x12\x10\n\x08\x64istance\x18\x08 \x01(\x02\x12\x0e\n\x06padded\x18\n \x01(\x08\x12\x1e\n\x04\x64\x61ta\x18\x0c \x03(\x0b\x32\x10.fileharbor.Data\"N\n\x0f\x41ggregateResult\x12\x12\n\nfield_name\x18\x01 \x01(\t\x12\'\n\x07\x65ntries\x18\x02 \x03(\x0b\x32\x16.fileharbor.ValueField\"%\n\x17ListSearchResultRequest\x12\n\n\x02id\x18\x01 \x01(\t\"w\n\x15ListSearchResultReply\x12.\n\x07\x65ntries\x18\x01 \x03(\x0b\x32\x1d.fileharbor.SearchResultEntry\x12.\n\taggregate\x18\x02 \x03(\x0b\x32\x1b.fileharbor.AggregateResult2\xaa\x01\n\x08Searcher\x12>\n\x06search\x12\x19.fileharbor.SearchRequest\x1a\x17.fileharbor.SearchReply\"\x00\x12^\n\x12list_search_result\x12#.fileharbor.ListSearchResultRequest\x1a!.fileharbor.ListSearchResultReply\"\x00\x42\x02P\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "searcher_pb2", _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'searcher_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
-    _globals["DESCRIPTOR"]._loaded_options = None
-    _globals["DESCRIPTOR"]._serialized_options = b"P\001"
-    _globals["_TEXTSEARCHTERM"]._serialized_start = 75
-    _globals["_TEXTSEARCHTERM"]._serialized_end = 225
-    _globals["_TEXTSEARCHTERM_FLAG"]._serialized_start = 188
-    _globals["_TEXTSEARCHTERM_FLAG"]._serialized_end = 225
-    _globals["_NUMBERSEARCHTERM"]._serialized_start = 228
-    _globals["_NUMBERSEARCHTERM"]._serialized_end = 555
-    _globals["_NUMBERSEARCHTERM_RELATION"]._serialized_start = 437
-    _globals["_NUMBERSEARCHTERM_RELATION"]._serialized_end = 507
-    _globals["_NUMBERSEARCHTERM_FLAG"]._serialized_start = 188
-    _globals["_NUMBERSEARCHTERM_FLAG"]._serialized_end = 225
-    _globals["_PLUGINVECTORSEARCHINDEX"]._serialized_start = 557
-    _globals["_PLUGINVECTORSEARCHINDEX"]._serialized_end = 612
-    _globals["_PLUGINVECTORSEARCHTERM"]._serialized_start = 615
-    _globals["_PLUGINVECTORSEARCHTERM"]._serialized_end = 831
-    _globals["_PLUGINVECTORSEARCHTERM_FLAG"]._serialized_start = 797
-    _globals["_PLUGINVECTORSEARCHTERM_FLAG"]._serialized_end = 831
-    _globals["_VECTORSEARCHTERM"]._serialized_start = 834
-    _globals["_VECTORSEARCHTERM"]._serialized_end = 1032
-    _globals["_VECTORSEARCHTERM_FLAG"]._serialized_start = 797
-    _globals["_VECTORSEARCHTERM_FLAG"]._serialized_end = 831
-    _globals["_SEARCHTERM"]._serialized_start = 1035
-    _globals["_SEARCHTERM"]._serialized_end = 1256
-    _globals["_AGGREGATEREQUEST"]._serialized_start = 1258
-    _globals["_AGGREGATEREQUEST"]._serialized_end = 1325
-    _globals["_SEARCHREQUEST"]._serialized_start = 1328
-    _globals["_SEARCHREQUEST"]._serialized_end = 2152
-    _globals["_SEARCHREQUEST_SORTING"]._serialized_start = 1812
-    _globals["_SEARCHREQUEST_SORTING"]._serialized_end = 1963
-    _globals["_SEARCHREQUEST_MAPPING"]._serialized_start = 1965
-    _globals["_SEARCHREQUEST_MAPPING"]._serialized_end = 2013
-    _globals["_SEARCHREQUEST_CLUSTERING"]._serialized_start = 2015
-    _globals["_SEARCHREQUEST_CLUSTERING"]._serialized_end = 2123
-    _globals["_SEARCHREQUEST_EXTRA"]._serialized_start = 2125
-    _globals["_SEARCHREQUEST_EXTRA"]._serialized_end = 2152
-    _globals["_SEARCHREPLY"]._serialized_start = 2154
-    _globals["_SEARCHREPLY"]._serialized_end = 2179
-    _globals["_SEARCHRESULTENTRY"]._serialized_start = 2182
-    _globals["_SEARCHRESULTENTRY"]._serialized_end = 2317
-    _globals["_AGGREGATERESULT"]._serialized_start = 2319
-    _globals["_AGGREGATERESULT"]._serialized_end = 2397
-    _globals["_LISTSEARCHRESULTREQUEST"]._serialized_start = 2399
-    _globals["_LISTSEARCHRESULTREQUEST"]._serialized_end = 2436
-    _globals["_LISTSEARCHRESULTREPLY"]._serialized_start = 2438
-    _globals["_LISTSEARCHRESULTREPLY"]._serialized_end = 2557
-    _globals["_SEARCHER"]._serialized_start = 2560
-    _globals["_SEARCHER"]._serialized_end = 2730
+  _globals['DESCRIPTOR']._loaded_options = None
+  _globals['DESCRIPTOR']._serialized_options = b'P\001'
+  _globals['_TEXTSEARCHTERM']._serialized_start=75
+  _globals['_TEXTSEARCHTERM']._serialized_end=225
+  _globals['_TEXTSEARCHTERM_FLAG']._serialized_start=188
+  _globals['_TEXTSEARCHTERM_FLAG']._serialized_end=225
+  _globals['_NUMBERSEARCHTERM']._serialized_start=228
+  _globals['_NUMBERSEARCHTERM']._serialized_end=555
+  _globals['_NUMBERSEARCHTERM_RELATION']._serialized_start=437
+  _globals['_NUMBERSEARCHTERM_RELATION']._serialized_end=507
+  _globals['_NUMBERSEARCHTERM_FLAG']._serialized_start=188
+  _globals['_NUMBERSEARCHTERM_FLAG']._serialized_end=225
+  _globals['_PLUGINVECTORSEARCHINDEX']._serialized_start=557
+  _globals['_PLUGINVECTORSEARCHINDEX']._serialized_end=612
+  _globals['_PLUGINVECTORSEARCHTERM']._serialized_start=615
+  _globals['_PLUGINVECTORSEARCHTERM']._serialized_end=831
+  _globals['_PLUGINVECTORSEARCHTERM_FLAG']._serialized_start=797
+  _globals['_PLUGINVECTORSEARCHTERM_FLAG']._serialized_end=831
+  _globals['_VECTORSEARCHTERM']._serialized_start=834
+  _globals['_VECTORSEARCHTERM']._serialized_end=1032
+  _globals['_VECTORSEARCHTERM_FLAG']._serialized_start=797
+  _globals['_VECTORSEARCHTERM_FLAG']._serialized_end=831
+  _globals['_SEARCHTERM']._serialized_start=1035
+  _globals['_SEARCHTERM']._serialized_end=1256
+  _globals['_AGGREGATEREQUEST']._serialized_start=1258
+  _globals['_AGGREGATEREQUEST']._serialized_end=1325
+  _globals['_SEARCHREQUEST']._serialized_start=1328
+  _globals['_SEARCHREQUEST']._serialized_end=2167
+  _globals['_SEARCHREQUEST_SORTING']._serialized_start=1827
+  _globals['_SEARCHREQUEST_SORTING']._serialized_end=1978
+  _globals['_SEARCHREQUEST_MAPPING']._serialized_start=1980
+  _globals['_SEARCHREQUEST_MAPPING']._serialized_end=2028
+  _globals['_SEARCHREQUEST_EXTRA']._serialized_start=2030
+  _globals['_SEARCHREQUEST_EXTRA']._serialized_end=2057
+  _globals['_SEARCHREQUEST_CLUSTERING']._serialized_start=2059
+  _globals['_SEARCHREQUEST_CLUSTERING']._serialized_end=2167
+  _globals['_SEARCHREPLY']._serialized_start=2169
+  _globals['_SEARCHREPLY']._serialized_end=2194
+  _globals['_SEARCHRESULTENTRY']._serialized_start=2197
+  _globals['_SEARCHRESULTENTRY']._serialized_end=2332
+  _globals['_AGGREGATERESULT']._serialized_start=2334
+  _globals['_AGGREGATERESULT']._serialized_end=2412
+  _globals['_LISTSEARCHRESULTREQUEST']._serialized_start=2414
+  _globals['_LISTSEARCHRESULTREQUEST']._serialized_end=2451
+  _globals['_LISTSEARCHRESULTREPLY']._serialized_start=2453
+  _globals['_LISTSEARCHRESULTREPLY']._serialized_end=2572
+  _globals['_SEARCHER']._serialized_start=2575
+  _globals['_SEARCHER']._serialized_end=2745
 # @@protoc_insertion_point(module_scope)

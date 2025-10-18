@@ -19,7 +19,6 @@ from backend.utils import (
     upload_url_to_image,
 )
 
-
 from interface import searcher_pb2, searcher_pb2_grpc
 from interface.utils import (
     meta_from_proto,
@@ -36,10 +35,12 @@ logger = logging.getLogger(__name__)
 class Search(RPCView):
     def parse_search_request(self, params, ids=None, collection_ids=None):
         grpc_request = searcher_pb2.SearchRequest()
-
-        print(params, flush=True)
-
-        grpc_request.include_fields.extend(["meta/title*", "meta/creator*", "image"])
+        # grpc_request.include_fields.extend([
+        #     "meta/title*",
+        #     "meta/creator*",
+        #     "meta/location*",
+        #     "image"
+        # ])
 
         for _, v in params.get("filters", {}).items():
             for x in v["name"]:
@@ -51,9 +52,11 @@ class Search(RPCView):
 
         if params.get("query") and params.get("modality"):
             params.setdefault("queries", [])
-            params["queries"].append(
-                {"type": params.get("modality"), "value": params.get("query")}
-            )
+
+            params["queries"].append({
+                "type": params.get("modality"),
+                "value": params.get("query")
+            })
 
         # if params.get("settings"):
         #     settings = params["settings"]
@@ -175,6 +178,7 @@ class Search(RPCView):
 
         for q in params.get("queries", []):
             print(f"q {q}", flush=True)
+
             if q.get("type") == "text":
                 term = grpc_request.terms.add()
                 input_field = term.vector.inputs.add()
@@ -264,7 +268,10 @@ class Search(RPCView):
         # if params.get("random") and isinstance(params["random"], (int, float, str)):
         #     grpc_request.sorting = searcher_pb2.SearchRequest.SORTING_RANDOM_FEATURE
         #     grpc_request.random_seed = str(params["random"])
+
+        grpc_request.limit = params.get("limit", 500)
         print(f"grpc_request {grpc_request}", flush=True)
+
         return grpc_request
 
     def rpc_load(self, params, ids=None, collection_ids=None, user=None):
@@ -317,11 +324,6 @@ class Search(RPCView):
         try:
             response = stub.list_search_result(request)
 
-            if collections is not None:
-                collection_ids = [c["hash_id"] for c in collections]
-            else:
-                collection_ids = []
-
             entries = []
 
             for e in response.entries:
@@ -329,61 +331,69 @@ class Search(RPCView):
                     "id": e.id,
                     "meta": [],
                     "images": [],
-                    # "meta": meta_from_proto(e.meta),
-                    # "origin": meta_from_proto(e.origin),
-                    # "classifier": classifier_from_proto(e.classifier),
-                    # "feature": feature_from_proto(e.feature),
-                    # "coordinates": list(e.coordinates),
-                    # "distance": e.distance,
-                    # "cluster": e.cluster,
-                    # "padded": e.padded,
                 }
+
+                geo_data = {}
+
                 for data in e.data:
                     data_type = data.WhichOneof("data")
 
                     if data_type == "bool":
-                        entry["meta"].append(
-                            {
-                                "name": data.name,
-                                "value": data.bool.value,
-                                "type": data_type,
-                            }
-                        )
+                        entry["meta"].append({
+                            "name": data.name,
+                            "value": data.bool.value,
+                            "type": data_type,
+                        })
                     elif data_type == "int":
-                        entry["meta"].append(
-                            {
-                                "name": data.name,
-                                "value": data.int.value,
-                                "type": data_type,
-                            }
-                        )
-
-                    elif data_type in "float":
-                        entry["meta"].append(
-                            {
-                                "name": data.name,
-                                "value": data.float.value,
-                                "type": data_type,
-                            }
-                        )
+                        entry["meta"].append({
+                            "name": data.name,
+                            "value": data.int.value,
+                            "type": data_type,
+                        })
+                    elif data_type == "float":
+                        entry["meta"].append({
+                            "name": data.name,
+                            "value": data.float.value,
+                            "type": data_type,
+                        })
                     elif data_type == "text":
-                        entry["meta"].append(
-                            {
-                                "name": data.name,
-                                "value": data.text.text,
-                                "type": data_type,
-                                "language": data.text.language,
-                            }
-                        )
+                        entry["meta"].append({
+                            "name": data.name,
+                            "value": data.text.text,
+                            "type": data_type,
+                            "language": data.text.language,
+                        })
+                    elif data_type == "geo":
+                        data_name = '/'.join(data.name.split('/')[:2])
+                        geo_data[data_name] = {
+                            "lat": data.geo.lat,
+                            "lon": data.geo.lon,
+                        }
                     elif data_type == "image":
+                        base_url = "http://localhost:8000"
+
                         entry["images"].append(
                             {
-                                "path": media_url_to_image(data.id),
-                                "preview": media_url_to_preview(data.id),
+                                "path": f"{base_url}{media_url_to_image(data.id)}",
+                                "preview": f"{base_url}{media_url_to_preview(data.id)}",
                             }
                         )
 
+                if geo_data:
+                    for row in entry["meta"]:
+                        if row["name"] in geo_data:
+                            row["lat"] = geo_data[row["name"]]["lat"]
+                            row["lon"] = geo_data[row["name"]]["lon"]
+
                 entries.append(entry)
+
+            def sort_key(field):
+                if field == "meta/time/start":
+                    return (0, field)
+                elif field == "meta/creator":
+                    return (1, field)
+                else:
+                    return (2, field)
 
             aggregations = []
 
@@ -393,23 +403,60 @@ class Search(RPCView):
                     "entries": [],
                 }
 
-                for x in e.entries:
-                    aggr["entries"].append(
-                        {
-                            "name": x.key,
-                            "count": x.int_val,
-                        }
-                    )
+                for x in sorted(e.entries, key=lambda x: sort_key(x.key)):
+                    aggr["entries"].append({
+                        "name": x.key,
+                        "count": x.int_val,
+                    })
 
                 aggregations.append(aggr)
 
-            if collections:
-                aggregations.append(
-                    {
-                        "field": "collection",
-                        "entries": collections,
-                    }
-                )
+            if not aggregations:
+                from statistics import fmean
+                from collections import defaultdict, Counter
+
+                field_counters = defaultdict(Counter)
+                coords = defaultdict(lambda: {"lat": [], "lon": []}) 
+
+                for entry in entries:
+                    for m in entry.get("meta", []):
+                        name = m.get("name")
+                        value = m.get("value")
+
+                        if not name or value is None:
+                            continue
+
+                        field_counters[name][value] += 1
+
+                        lat = m.get("lat")
+                        lon = m.get("lon")
+                        if lat and lon:
+                            coords[value]["lat"].append(lat)
+                            coords[value]["lon"].append(lon)
+
+                for field, counter in sorted(
+                    field_counters.items(),
+                    key=lambda x: sort_key(x[0])
+                ):
+                    entries_out = []
+
+                    for name, count in counter.most_common(50):
+                        item = {
+                            "name": name,
+                            "count": count,
+                        }
+
+                        c = coords.get(name)
+                        if c and c["lat"] and c["lon"]:
+                            item["lat"] = fmean(c["lat"])
+                            item["lon"] = fmean(c["lon"])
+
+                        entries_out.append(item)
+
+                    aggregations.append({
+                        "field": field,
+                        "entries": entries_out,
+                    })
 
             result = {
                 "entries": entries,
