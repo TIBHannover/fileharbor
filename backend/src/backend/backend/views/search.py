@@ -357,12 +357,15 @@ class Search(RPCView):
                             "type": data_type,
                         })
                     elif data_type == "text":
-                        entry["meta"].append({
-                            "name": data.name,
-                            "value": data.text.text,
-                            "type": data_type,
-                            "language": data.text.language,
-                        })
+                        data_value = data.text.text
+
+                        if not data_value.startswith("http://"):
+                            entry["meta"].append({
+                                "name": data.name,
+                                "value": data_value,
+                                "type": data_type,
+                                "language": data.text.language,
+                            })
                     elif data_type == "geo":
                         data_name = '/'.join(data.name.split('/')[:2])
                         geo_data[data_name] = {
