@@ -210,9 +210,13 @@ const props = defineProps({
 
 const emit = defineEmits(['apply'])
 
-const filteredData = computed(() =>
-  (props.data ?? []).filter(r => r.field.startsWith('meta/'))
-)
+const filteredData = computed(() => {
+  const data = props.data ?? []
+  return data.filter(({ field }) => 
+    field?.startsWith('meta/') && 
+      field !== 'meta/time/end'
+  )
+})
 
 const isGeographicEntries = (entries) => {
   if (!Array.isArray(entries) || entries.length === 0) return false

@@ -148,9 +148,10 @@ message SearchRequest {
 
   // Fields to include in the returned search results
   repeated string include_fields = 13;
+  repeated string include_fields_aggregate = 14;
 
   // Maximum number of results to return
-  int64 limit = 14;
+  int64 limit = 15;
 }
 
 message SearchReply { string id = 1; }

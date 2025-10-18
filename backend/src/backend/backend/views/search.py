@@ -31,16 +31,25 @@ from google.protobuf.json_format import MessageToJson, MessageToDict, ParseDict
 
 logger = logging.getLogger(__name__)
 
+default_fields = [
+    "meta/collection*",
+    "meta/creator*",
+    "meta/depicts*",
+    "meta/genre*",
+    "meta/location*",
+    "meta/made_from_material*",
+    "meta/medium*",
+    "meta/movement*",
+    "meta/instance_of*",
+    "meta/time*",
+    "image",
+]
+
 
 class Search(RPCView):
     def parse_search_request(self, params, ids=None, collection_ids=None):
         grpc_request = searcher_pb2.SearchRequest()
-        # grpc_request.include_fields.extend([
-        #     "meta/title*",
-        #     "meta/creator*",
-        #     "meta/location*",
-        #     "image"
-        # ])
+        grpc_request.include_fields.extend(default_fields)
 
         for _, v in params.get("filters", {}).items():
             for x in v["name"]:
