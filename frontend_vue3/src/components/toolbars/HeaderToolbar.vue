@@ -32,15 +32,12 @@
         </v-btn>
       </template>
     </SearchDialog>
-
-    <v-spacer />
-
-    <SearchDialog />
   </v-app-bar>
 </template>
 
 <script setup>
 import LogoTemplate from '@/components/LogoTemplate.vue'
+import ParamsField from '@/components/ParamsField.vue'
 import SearchDialog from '@/components/dialogs/SearchDialog.vue'
 
 defineEmits(['toggle-drawer'])

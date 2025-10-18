@@ -3,8 +3,14 @@ import { defineStore } from 'pinia'
 import axios from '@/plugins/axios'
 
 export const useSearchStore = defineStore('search', () => {
-  let params = {}
   let filters = {}
+
+  const params = ref({
+    query: '',
+    modality: 'text',
+    dataset: ['wikidata'],
+    similarity: ['content'],
+  })
 
   const jobId = ref(null)
   const entries = ref([])
@@ -12,13 +18,13 @@ export const useSearchStore = defineStore('search', () => {
 
   function post(newParams = {}) {
     const mergedParams = {
-      ...params,
+      ...params.value,
       ...newParams,
-      dataset: newParams.dataset ?? params.dataset,
-      similarity: newParams.similarity ?? params.similarity,
+      dataset: newParams.dataset ?? params.value.dataset,
+      similarity: newParams.similarity ?? params.value.similarity,
     }
 
-    params = mergedParams
+    params.value = mergedParams
     const body = { ...mergedParams, filters }
 
     axios.post('/search', { params: body }).then(({ data }) => {
@@ -54,6 +60,7 @@ export const useSearchStore = defineStore('search', () => {
   }
 
   return {
+    params,
     entries,
     aggregations,
     post,

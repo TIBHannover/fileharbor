@@ -8,6 +8,7 @@
   <v-main class="w-100">
     <div :class="['mb-3', drawer ? 'px-4' : 'px-3']">
       <SearchToolbar
+        v-if="entries.length"
         :key="toolbarKey"
         :search-results="entries.length || 0"
         :items-per-page="itemsPerPage"

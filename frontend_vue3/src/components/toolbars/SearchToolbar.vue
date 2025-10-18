@@ -185,22 +185,34 @@ watch(() => props.viewMode, (value) => viewModeLocal.value = value)
 
 <style>
 .group-by .v-field {
-  text-transform: uppercase;
-  font-weight: 500;
-  letter-spacing: 1.25px;
-  color: rgb(158 158 158);
-  font-size: 14px;
-  padding-right: 10px;
+  padding-right: 0;
+  font-weight: 700;
 }
 
 .group-by .v-field__outline__start,
 .group-by .v-field__outline__notch,
 .group-by .v-field__outline__end {
-  color: rgb(158 158 158);
+  color: transparent;
 }
 
 .group-by .v-field__input {
-  min-height: 20px;
-  padding: 8px 5px 7px 10px;
+  padding: 0;
+}
+
+.group-by .v-input__prepend {
+  margin-right: 6px;
+}
+
+.group-by .v-field__input,
+.group-by .v-field__input *,
+.group-by .v-input__prepend,
+.group-by .v-field__append-inner {
+  height: 28px;
+  min-height: 28px;
+  align-items: center;
+}
+
+.group-by .v-field__append-inner {
+  display: none;
 }
 </style>

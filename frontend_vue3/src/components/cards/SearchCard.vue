@@ -5,13 +5,15 @@
   >
     <div
       v-bind="activatorProps"
-      class="grid-item"
+      :class="props.isFlex ? 'grid-item-flex' : 'grid-item'"
       :disabled="isDisabled ? true : undefined"
       @click="openDialog"
       @keydown.enter.prevent="openDialog"
       @keydown.space.prevent="openDialog"
     >
       <img
+        v-if="item.images && item.images.length > 0"
+        class="bg-grey-lighten-2"
         :src="item.images[0].preview"
         :alt="titles[0]"
         loading="lazy"
@@ -60,6 +62,10 @@ const props = defineProps({
   item: {
     type: Object,
     required: true
+  },
+  isFlex: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -118,8 +124,8 @@ function openDialog() {
   overflow: hidden;
 }
 
-.grid-item {
-  border-radius: 28px;
+.grid-item,
+.grid-item-flex {
   position: relative;
   overflow: hidden;
   min-width: 80px;
@@ -129,21 +135,33 @@ function openDialog() {
   flex-grow: 1;
 }
 
-.grid-item[disabled] {
+.grid-item {
+  border-radius: 28px;
+}
+
+.grid-item-flex {
+  border-radius: 2px;
+  margin: 2px;
+}
+
+.grid-item[disabled],
+.grid-item-flex[disabled] {
   display: none;
 }
 
-.grid-item > img {
+.grid-item > img,
+.grid-item-flex > img {
   transition: transform 0.5s ease;
   transform: scale(1.05);
-  object-position: top;
-  object-fit: cover;
+  object-position: center;
+  object-fit: contain;
   min-width: 100%;
   max-width: 100%;
   height: 100%;
 }
 
-.grid-item:hover > img {
+.grid-item:hover > img,
+.grid-item-flex:hover > img {
   transform: scale(1.3);
 }
 </style>

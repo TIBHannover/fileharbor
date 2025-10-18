@@ -193,7 +193,7 @@ watch(
   filter: grayscale(1) brightness(1);
 }
 
-.leaflet-container.leaflet-div-icon {
+.leaflet-container .leaflet-div-icon {
   width: auto;
   height: auto;
   font-size: 1rem;

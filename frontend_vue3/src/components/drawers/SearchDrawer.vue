@@ -1,178 +1,192 @@
 <template>
   <v-navigation-drawer
     :model-value="modelValue"
-    class="overflow-y-auto pt-2"
     width="400"
   >
-    <v-expansion-panels
-      v-model="panel"
-      variant="accordion"
-      :max="3"
-      multiple
-      static
-      flat
-    >
-      <v-expansion-panel
-        v-for="record in filteredData"
-        :key="record.field"
+    <v-row no-gutters>
+      <v-col class="pa-6">
+        <div class="text-caption text-uppercase text-medium-emphasis mb-2">
+          {{ $t("search.bar.title") }}
+        </div>
+
+        <ParamsField />
+      </v-col>
+    </v-row>
+
+    <template v-if="filteredData.length">
+      <v-divider />
+
+      <div class="text-caption text-uppercase text-medium-emphasis mx-6 mt-6">
+        {{ $t("search.drawer.title") }}
+      </div>
+
+      <v-expansion-panels
+        v-model="panel"
+        class="overflow-y-auto"
+        variant="accordion"
+        :max="3"
+        multiple
+        static
+        flat
       >
-        <v-expansion-panel-title>
-          {{ $t(`search.drawer.field.${record.field}`) }}
+        <v-expansion-panel
+          v-for="record in filteredData"
+          :key="record.field"
+        >
+          <v-expansion-panel-title>
+            {{ $t(`search.drawer.field.${record.field}`) }}
 
-          <span
-            v-if="selectionCounts[record.field] > 0"
-            class="ml-2"
-          >
-            <i18n-t
-              keypath="search.drawer.count"
-              :plural="selectionCounts[record.field]"
-              :values="{ count: '' }"
-            >
-              <template #count>
-                <strong>{{ selectionCounts[record.field] }}</strong>
-              </template>
-            </i18n-t>
-          </span>
-
-          <template #actions="{ expanded }">
-            <v-btn
+            <span
               v-if="selectionCounts[record.field] > 0"
-              class="mr-1"
-              variant="text"
-              density="compact"
-              color="grey"
-              icon="mdi-refresh"
-              @click.stop="clearField(record.field)"
-            />
-
-            <v-btn
-              variant="text"
-              density="compact"
-              color="grey"
-              :icon="expanded ? 'mdi-minus-circle-outline' : 'mdi-plus-circle-outline'"
-            />
-          </template>
-        </v-expansion-panel-title>
-
-        <v-expansion-panel-text>
-          <HistogramPanel
-            v-if="record.field === 'meta/year_min'"
-            :data="record.entries"
-            @update-years="onUpdateYears"
-          >
-            <v-row class="mt-2">
-              <v-col>
-                <v-number-input
-                  :model-value="selectedEntries['meta/year_min']"
-                  :placeholder="String(Math.min(...years))"
-                  :min="Math.min(...years)"
-                  :max="Math.max(...years)"
-                  control-variant="stacked"
-                  variant="outlined"
-                  density="compact"
-                  hide-details
-                  clearable
-                  rounded
-                  inset
-                  @update:model-value="val => (selectedEntries['meta/year_min'] = val)"
-                >
-                  <template #clear>
-                    <v-icon size="14">
-                      mdi-close
-                    </v-icon>
-                  </template>
-                </v-number-input>
-              </v-col>
-
-              <v-col
-                cols="auto"
-                class="d-flex align-center px-0"
+              class="ml-2"
+            >
+              <i18n-t
+                keypath="search.drawer.count"
+                :plural="selectionCounts[record.field]"
+                :values="{ count: '' }"
               >
-                –
-              </v-col>
+                <template #count>
+                  <strong>{{ selectionCounts[record.field] }}</strong>
+                </template>
+              </i18n-t>
+            </span>
 
-              <v-col>
-                <v-number-input
-                  :model-value="selectedEntries['meta/year_max']"
-                  :placeholder="String(Math.max(...years))"
-                  :min="Math.min(...years)"
-                  :max="Math.max(...years)"
-                  control-variant="stacked"
-                  variant="outlined"
-                  density="compact"
-                  hide-details
-                  clearable
-                  rounded
-                  inset
-                  @update:model-value="val => (selectedEntries['meta/year_max'] = val)"
+            <template #actions="{ expanded }">
+              <v-btn
+                v-if="selectionCounts[record.field] > 0"
+                class="mr-1"
+                variant="text"
+                density="compact"
+                color="grey"
+                icon="mdi-refresh"
+                @click.stop="clearField(record.field)"
+              />
+
+              <v-btn
+                variant="text"
+                density="compact"
+                color="grey"
+                :icon="expanded ? 'mdi-minus-circle-outline' : 'mdi-plus-circle-outline'"
+              />
+            </template>
+          </v-expansion-panel-title>
+
+          <v-expansion-panel-text>
+            <HistogramPanel
+              v-if="record.field === 'meta/time/start'"
+              :data="record.entries"
+              @update-years="onUpdateYears"
+            >
+              <v-row class="mt-2">
+                <v-col>
+                  <v-number-input
+                    :model-value="selectedEntries['meta/time/start']"
+                    :placeholder="String(Math.min(...years))"
+                    control-variant="stacked"
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                    clearable
+                    rounded
+                    inset
+                    @update:model-value="val => (selectedEntries['meta/time/start'] = val)"
+                  >
+                    <template #clear>
+                      <v-icon size="14">
+                        mdi-close
+                      </v-icon>
+                    </template>
+                  </v-number-input>
+                </v-col>
+
+                <v-col
+                  cols="auto"
+                  class="d-flex align-center px-0"
                 >
-                  <template #clear>
-                    <v-icon size="14">
-                      mdi-close
-                    </v-icon>
-                  </template>
-                </v-number-input>
-              </v-col>
-            </v-row>
-          </HistogramPanel>
+                  –
+                </v-col>
 
-          <template v-else>
-            <MapPanel
-              v-if="isLocationEntries(record.entries)"
-              :data="record.entries"
-              class="mb-4"
-            />
+                <v-col>
+                  <v-number-input
+                    :model-value="selectedEntries['meta/time/end']"
+                    :placeholder="String(Math.max(...years))"
+                    control-variant="stacked"
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                    clearable
+                    rounded
+                    inset
+                    @update:model-value="val => (selectedEntries['meta/time/end'] = val)"
+                  >
+                    <template #clear>
+                      <v-icon size="14">
+                        mdi-close
+                      </v-icon>
+                    </template>
+                  </v-number-input>
+                </v-col>
+              </v-row>
+            </HistogramPanel>
 
-            <BarChartPanel
-              v-else-if="!isNumericEntries(record.entries)"
-              :data="record.entries"
-            />
+            <template v-else>
+              <MapPanel
+                v-if="isGeographicEntries(record.entries)"
+                :data="record.entries"
+                class="mb-4"
+              />
 
-            <v-virtual-scroll
-              :items="record.entries"
-              item-key="name"
-              max-height="250"
-              item-height="28"
+              <BarChartPanel
+                v-else-if="!isNumericEntries(record.entries)"
+                :data="record.entries"
+              />
+
+              <v-virtual-scroll
+                :items="record.entries"
+                item-key="name"
+                max-height="250"
+                item-height="28"
+              >
+                <template #default="{ item }">
+                  <v-list-item class="pa-0">
+                    <v-list-item-title>
+                      <v-checkbox
+                        :model-value="selectedEntries[record.field] ?? []"
+                        :value="item.name"
+                        density="compact"
+                        hide-details
+                        @update:model-value="val => (selectedEntries[record.field] = val)"
+                      >
+                        <template #label>
+                          <div class="text-body-2 ml-1">
+                            {{ item.name }}
+                            (<b>{{ item.count }}</b>)
+                          </div>
+                        </template>
+                      </v-checkbox>
+                    </v-list-item-title>
+                  </v-list-item>
+                </template>
+              </v-virtual-scroll>
+            </template>
+
+            <div
+              v-show="isSelectedField(record.field)"
+              class="actions mt-4"
             >
-              <template #default="{ item }">
-                <v-list-item class="pa-0">
-                  <v-list-item-title>
-                    <v-checkbox
-                      :model-value="selectedEntries[record.field] ?? []"
-                      :value="item.name"
-                      density="compact"
-                      hide-details
-                      @update:model-value="val => (selectedEntries[record.field] = val)"
-                    >
-                      <template #label>
-                        <div class="text-body-2 ml-1">
-                          {{ item.name }}
-                          (<b>{{ item.count }}</b>)
-                        </div>
-                      </template>
-                    </v-checkbox>
-                  </v-list-item-title>
-                </v-list-item>
-              </template>
-            </v-virtual-scroll>
-          </template>
-
-          <div
-            v-show="isSelectedField(record.field)"
-            class="actions mt-4"
-          >
-            <v-btn
-              color="grey"
-              variant="outlined"
-              block
-              @click="onApply"
-            >
-              {{ $t('search.drawer.apply') }}
-            </v-btn>
-          </div>
-        </v-expansion-panel-text>
-      </v-expansion-panel>
-    </v-expansion-panels>
+              <v-btn
+                color="grey"
+                variant="outlined"
+                block
+                @click="onApply"
+              >
+                {{ $t('search.drawer.apply') }}
+              </v-btn>
+            </div>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+      </v-expansion-panels>
+    </template>
   </v-navigation-drawer>
 </template>
 
@@ -181,6 +195,7 @@ import { ref, computed, reactive, watch } from 'vue'
 import MapPanel from '@/components/panels/MapPanel.vue'
 import BarChartPanel from '@/components/panels/BarChartPanel.vue'
 import HistogramPanel from '@/components/panels/HistogramPanel.vue'
+import ParamsField from '@/components/ParamsField.vue'
 
 const props = defineProps({
   modelValue: {
@@ -199,14 +214,15 @@ const filteredData = computed(() =>
   (props.data ?? []).filter(r => r.field.startsWith('meta/'))
 )
 
-const isLocationEntries = (entries) => {
+const isGeographicEntries = (entries) => {
   if (!Array.isArray(entries) || entries.length === 0) return false
-  return entries.some(e => e.lat && e.lon)
+  const withCoords = entries.filter(e => e.lat && e.lon).length
+  return withCoords / entries.length >= 0.75
 }
 
 const isNumericEntries = (entries) => {
   if (!Array.isArray(entries) || entries.length === 0) return false
-  return entries.every(e => typeof e.name === 'number' || !isNaN(Number(e.name)))
+  return entries.every(e => typeof e.name === 'number')
 }
 
 const panel = ref([0])
@@ -217,7 +233,7 @@ const selectedFields = computed(() => new Set(Object.keys(selectedEntries)))
 const isSelectedField = (field) => selectedFields.value.has(field)
 
 const selectionCounts = computed(() => {
-  const yearKeys = ["meta/year_min", "meta/year_max"]
+  const yearKeys = ["meta/time/start", "meta/time/end"]
   const hasRange = yearKeys.every((k) =>
     Object.prototype.hasOwnProperty.call(selectedEntries, k)
   )

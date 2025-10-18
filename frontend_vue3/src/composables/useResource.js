@@ -55,8 +55,8 @@ export default function useResource(item) {
   })
 
   const years = computed(() => {
-    const mins = getMetaValues('meta/year_min', true)
-    const maxs = getMetaValues('meta/year_max', true)
+    const mins = getMetaValues('meta/time/start', true)
+    const maxs = getMetaValues('meta/time/end', true)
 
     const min = mins.length ? Math.min(...mins) : -9999
     const max = maxs.length ? Math.max(...maxs) : 9999
@@ -66,9 +66,9 @@ export default function useResource(item) {
   const metadata = computed(() => {
     const excluded = new Set([
       'meta/title',
-      'ref/url',
-      'meta/year_min',
-      'meta/year_max'
+      'meta/time/start',
+      'meta/time/end',
+      'ref/url'
     ])
 
     const result = {}

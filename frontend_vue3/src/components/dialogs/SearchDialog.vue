@@ -16,8 +16,10 @@
       </template>
       <template v-else>
         <v-btn
-          icon="mdi-magnify"
           v-bind="activatorProps"
+          icon="mdi-magnify"
+          density="compact"
+          variant="flat"
         />
       </template>
     </template>
@@ -274,6 +276,7 @@
                 variant="outlined"
                 min-width="150"
                 height="75"
+                :disabled="option.disabled"
                 @click="toggle"
               >
                 <template #prepend>
@@ -313,6 +316,7 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { storeToRefs } from 'pinia'
 import { useSearchStore } from '@/stores/search'
 
 const props = defineProps({
@@ -337,19 +341,31 @@ const emit = defineEmits([
 ])
 
 const search = useSearchStore()
+const { params } = storeToRefs(search)
 const { t } = useI18n({ useScope: 'global' })
 
 const dialog = ref(false)
 const maxValue = 100
 
-const inputText = ref('')
-const inputImages = ref([])
-const inputIconclass = ref('')
+const modalityLocal = ref(props.modality ?? params.value.modality)
+const similarityLocal = ref([...(params.value.similarity?.length ? props.similarity : params.value.similarity)])
+const datasetLocal = ref([...(params.value.dataset?.length ? props.dataset : params.value.dataset)])
 
-const modalityLocal = ref(props.modality)
-const similarityLocal = ref([...props.similarity])
 const similaritySettings = ref(false)
-const datasetLocal = ref([...props.dataset])
+
+const inputText = ref(
+  (modalityLocal.value === 'text' && typeof params.value.query === 'string')
+    ? params.value.query
+    : ''
+)
+
+const inputImages = ref(
+  (modalityLocal.value === 'images' && Array.isArray(params.value.query))
+    ? [...params.value.query]
+    : []
+)
+
+const inputIconclass = ref('')
 
 const modalityOptions = computed(() => ([
   { key: 'text',        value: t('search.dialog.modality.text') },
@@ -370,9 +386,9 @@ const datasetOptions = computed(() => ([
   { key: 'wikidata',    value: t('search.dialog.dataset.wikidata') },
   { key: 'kenom',       value: t('search.dialog.dataset.kenom') },
   { key: 'artigo',      value: t('search.dialog.dataset.artigo') },
-  { key: 'other-1',     value: t('search.dialog.dataset.other') },
-  { key: 'other-2',     value: t('search.dialog.dataset.other') },
-  { key: 'other-3',     value: t('search.dialog.dataset.other') }
+  { key: 'other-1',     value: t('search.dialog.dataset.other'),          disabled: true },
+  { key: 'other-2',     value: t('search.dialog.dataset.other'),          disabled: true },
+  { key: 'other-3',     value: t('search.dialog.dataset.other'),          disabled: true }
 ]))
 
 const similarityValues = reactive(

@@ -2,6 +2,7 @@
   "search": {
     "title": "Search",
     "bar": {
+      "title": "Search For",
       "count": "No Search Results | {count} Search Result | {count} Search Results",
       "order-by": {
         "title": "Order By",
@@ -46,6 +47,7 @@
       }
     },
     "drawer": {
+      "title": "Refine By",
       "count": "(No Filters) | ({count} Filter) | ({count} Filters)",
       "apply": "Apply",
       "field": {
@@ -66,8 +68,8 @@
         "meta/instance_of": "Object Type",
         "meta/period": "Period",
         "meta/title": "Title",
-        "meta/year_min": "Time Begin",
-        "meta/year_max": "Time End",
+        "meta/time/start": "Time Start",
+        "meta/time/end": "Time End",
         "ref/url": "URL",
         "origin": {
           "name": "Dataset"
