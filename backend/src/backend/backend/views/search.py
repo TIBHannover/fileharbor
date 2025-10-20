@@ -42,6 +42,7 @@ default_fields = [
     "meta/movement*",
     "meta/instance_of*",
     "meta/time*",
+    "meta/title*",
     "image",
 ]
 
