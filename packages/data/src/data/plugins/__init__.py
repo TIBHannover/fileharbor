@@ -17,6 +17,7 @@ from .text_data import TextData
 # from .place_cluster_data import PlaceClusterData
 # from .place_data import PlaceData, PlacesData
 from .list_data import ListData
+from .feature_data import FeatureData
 
 # from .image_embedding import ImageEmbedding, ImageEmbeddings
 # from .text_embedding import TextEmbedding, TextEmbeddings

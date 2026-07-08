@@ -22,7 +22,6 @@ def parse_args():
 
 
 def read_input_data(path: str) -> Generator[Dict, Any, Any]:
-
     with open(path) as f:
         for line in f:
             d = json.loads(line)

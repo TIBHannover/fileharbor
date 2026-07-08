@@ -1,6 +1,8 @@
 import logging
 import uuid
 import copy
+import grpc
+import re
 
 from interface import collection_pb2, collection_pb2_grpc
 from jobs import IndexingJob
@@ -119,6 +121,8 @@ class CollectionServicer(collection_pb2_grpc.CollectionServicer):
                             f"[Collection::add_points] Data type '{data_type}' is not supported."
                         )
 
+            self.shared_object.collection_database.add_point(list_data)
+
             yield collection_pb2.AddPointsReply(
                 status="ok", id=data_id, indexing_job_id=job_id
             )
@@ -140,3 +144,22 @@ class CollectionServicer(collection_pb2_grpc.CollectionServicer):
         )
         variable["future"] = future
         self.futures.append(variable)
+
+    def get(
+        self, request: collection_pb2.GetRequest, context: grpc.ServicerContext
+    ) -> collection_pb2.GetResponse:
+        response = collection_pb2.GetResponse(id=request.id)
+        with self.shared_object.data_manager.load(request.id) as list_data:
+            for name, data in list_data:
+                pb_data = response.data.add()
+                pb_data.CopyFrom(data.to_proto())
+                pb_data.name = name
+
+                data_type = pb_data.WhichOneof("data")
+
+                if data_type == "text":
+                    if match := re.match(r"^(.*)\/_(.{2})$", name):
+                        pb_data.name = match.group(1)
+                        pb_data.text.language = match.group(2)
+
+        return response

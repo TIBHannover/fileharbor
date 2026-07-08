@@ -106,6 +106,10 @@ class IndexingJob:
                             logging.warning(f"No outputs from plugin ({data_plugin})")
                             continue
 
+                        self.shared_object.collection_database.add_data_to_point(
+                            point.id, results, name=index_name
+                        )
+
                         # TODO multivector plugins
                         feature_vecs = list(results.results[0].result.feature.feature)
                         feature_dict[index_name].append(feature_vecs)

@@ -23,6 +23,7 @@ from plugins import ComputePluginManager
 from plugins.cache import Cache
 from data import DataManager
 from database.filesystem_database import FilesystemCollectionDatabase
+from database.valkey_database import CollectionDatabase, ValkeyCollectionRegister
 
 
 class Server:
@@ -51,7 +52,9 @@ class Server:
 
         data_manager = DataManager(data_dir=data_dir, cache=cache)
 
-        collection_item_database = FilesystemCollectionDatabase(config["data"]["path"])
+        collection_database = CollectionDatabase(
+            ValkeyCollectionRegister(), data_manager
+        )
 
         self.shared_object = SharedObject(
             config,
@@ -59,7 +62,7 @@ class Server:
             compute_plugin_manager=compute_plugin_manager,
             indexer_plugin_manager=indexer_plugin_manager,
             data_manager=data_manager,
-            collection_item_database=collection_item_database,
+            collection_database=collection_database,
         )
 
         self.indexer_servicer = AnalyserServicer(config, self.shared_object)

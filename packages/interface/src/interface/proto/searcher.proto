@@ -152,6 +152,9 @@ message SearchRequest {
 
   // Maximum number of results to return
   int64 limit = 15;
+
+  // Include image and media information
+  bool include_media = 16;
 }
 
 message SearchReply { string id = 1; }

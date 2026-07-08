@@ -173,6 +173,7 @@ class SearchJob:
                         to_include = False
                         if len(request.include_fields) == 0:
                             to_include = True
+
                         for x in request.include_fields:
                             if fnmatch(name, x):
                                 to_include = True

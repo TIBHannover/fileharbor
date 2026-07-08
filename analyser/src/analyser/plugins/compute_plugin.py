@@ -117,7 +117,7 @@ class ComputePlugin(Plugin):
                     else:
                         logging.error("Missing image content")
 
-                elif value["type"] == "string":
+                elif value["type"] == "text":
                     input_field.name = "text"
                     input_field.text.text = value["content"]
 
@@ -167,7 +167,6 @@ class ComputePluginManager:
 
         self.compute_plugins = {}
         for plugin in self.config.get("compute_plugin", []):
-
             plugin_name = plugin.get("name")
             if plugin_name is None and not isinstance(plugin_name, str):
                 # logging.error(
@@ -184,7 +183,6 @@ class ComputePluginManager:
 
             compute_plugin_inference_server_name = plugin.get("inference")
             if not isinstance(compute_plugin_inference_server_name, (str, type(None))):
-
                 logging.error(
                     f'Compute plugin "{plugin_name}" has a invalid inference type.'
                 )

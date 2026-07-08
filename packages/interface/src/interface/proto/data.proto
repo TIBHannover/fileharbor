@@ -25,10 +25,16 @@ message ClassifierResult {
 
 message BinaryFeature { string binary = 1; }
 
+message PluginInfo {
+  string name = 1;
+  string version = 2;
+}
+
 message Feature {
-  string type = 1;
-  repeated int32 shape = 2;
-  repeated float feature = 3;
+  PluginInfo plugin = 1;
+  string type = 2;
+  repeated int32 shape = 3;
+  repeated float feature = 4;
 }
 
 message BoundingBox {
@@ -64,18 +70,19 @@ message GeoData {
 message Data {
   string id = 1;
   string name = 2;
+  string ref_id = 3;
   oneof data {
-    ImageData image = 3;
-    TextData text = 4;
-    ClassifierResult classifier = 5;
-    Feature feature = 6;
-    BinaryFeature binary_feature = 7;
-    BoundingBox bounding_box = 8;
-    Pose pose = 9;
-    BoolData bool = 10;
-    IntData int = 11;
-    FloatData float = 12;
-    GeoData geo = 13;
+    ImageData image = 4;
+    TextData text = 5;
+    ClassifierResult classifier = 6;
+    Feature feature = 7;
+    BinaryFeature binary_feature = 8;
+    BoundingBox bounding_box = 9;
+    Pose pose = 10;
+    BoolData bool = 11;
+    IntData int = 12;
+    FloatData float = 13;
+    GeoData geo = 14;
   }
 }
 
@@ -113,4 +120,6 @@ enum PluginDataType {
   FLOAT_DATA = 27;
 
   GEO_DATA = 28;
+  FEATURE_DATA = 29;
+  FEATURES_DATA = 30;
 }

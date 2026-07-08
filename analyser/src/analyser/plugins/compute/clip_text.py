@@ -35,6 +35,8 @@ class ClipTextEmbeddingFeature(
 
         inputs, parameters = self.map_analyser_request_to_dict(plugin_run)
 
+        logging.error(f"Text embedding inputs ClipTextEmbeddingFeature: {inputs}")
+
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
         if self.model is None:

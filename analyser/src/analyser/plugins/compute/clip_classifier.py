@@ -30,10 +30,12 @@ class ClipClassification(
         from sklearn.metrics.pairwise import cosine_similarity
 
         inputs, parameters = self.map_analyser_request_to_dict(plugin_run)
+        logging.error(inputs)
 
         image_embedding_request = self.map_dict_to_analyser_request(
             {"image": inputs["image"]}, parameters
         )
+        logging.error(f"Image embedding request: {image_embedding_request}")
 
         image_embedding_result = self.inference_server_manager(
             self.compute_plugin_manager,
@@ -41,9 +43,13 @@ class ClipClassification(
             request=image_embedding_request,
         )
 
+        logging.error(
+            f"Text embedding request: { {'text': inputs['text']} } {parameters}"
+        )
         text_embedding_request = self.map_dict_to_analyser_request(
             {"text": inputs["text"]}, parameters
         )
+        logging.error(f"Text embedding request: {text_embedding_request}")
 
         text_embedding_result = self.inference_server_manager(
             self.compute_plugin_manager,

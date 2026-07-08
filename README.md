@@ -80,3 +80,13 @@ iART was funded by the [DFG](https://gepris.dfg.de/gepris/projekt/415796915) fro
 ## Contributing
 
 Please report issues, feature requests, and questions to the [GitHub issue tracker](https://github.com/TIBHannover/iart/issues). We have a [Contributor Code of Conduct](https://github.com/TIBHannover/iart/blob/master/CODE_OF_CONDUCT.md). By participating in iART you agree to abide by its terms.
+
+
+# Dev informations
+
+## Rebuild the Protobuf files
+
+```sh
+cd packages/interface/src/interface/
+uv run python -m grpc_tools.protoc -I=proto --python_out=. --grpc_python_out=. proto/*
+```

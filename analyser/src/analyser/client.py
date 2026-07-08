@@ -97,7 +97,6 @@ def entries_to_request(
                 if data_entry.get("type") == "image":
                     m = mimetypes.guess_type(data_entry["file_path"])[0]
                     if "image" in m:
-
                         pb_data_entry = request.data.add()
                         pb_data_entry.id = data_entry["id"]
                         pb_data_entry.name = path
@@ -112,7 +111,6 @@ def entries_to_request(
                             exit()
 
                 if data_entry.get("type") == "geo":
-
                     lat = data_entry.get("lat")
                     lon = data_entry.get("lon")
 
@@ -122,7 +120,6 @@ def entries_to_request(
                     pb_data_entry.geo.lon = lon
 
                 if data_entry.get("type") == "time":
-
                     value = data_entry.get("value")
 
                     pb_data_entry = request.data.add()
@@ -293,9 +290,9 @@ class Client:
             if i["type"] == "image":
                 input_field.name = "image"
                 input_field.image.content = open(i["path"], "rb").read()
-            elif i["type"] == "string":
+            elif i["type"] == "text":
                 input_field.name = "text"
-                input_field.string.text = i["text"]
+                input_field.text.text = i["text"]
 
         for p in parameters:
             parameter_field = request.plugin_run.parameters.add()
@@ -330,7 +327,6 @@ class Client:
                 raise
 
         if download:
-
             entries = list(entries)
 
             entries_to_download = []
@@ -579,8 +575,8 @@ class Client:
             ],
         )
 
-        stub = analyser_pb2_grpc.AnalyserStub(channel)
-        request = analyser_pb2.GetRequest(id=id)
+        stub = collection_pb2_grpc.CollectionStub(channel)
+        request = collection_pb2.GetRequest(id=id)
 
         response = stub.get(request)
 
