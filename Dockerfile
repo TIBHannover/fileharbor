@@ -18,16 +18,19 @@ COPY analyser/pyproject.toml /app/analyser/pyproject.toml
 
 # Install dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-install-project --no-dev
+    uv sync --frozen --no-install-project --no-dev
 
 # Then, add the rest of the project source code and install it
 # Installing separately from its dependencies allows optimal layer caching
 # COPY . /app
+
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked 
+    uv sync --frozen --no-dev --no-editable
 
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
+# Explicitly set VIRTUAL_ENV so uv and Ray agree on where it lives
+# ENV VIRTUAL_ENV="/app/.venv"
 
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
