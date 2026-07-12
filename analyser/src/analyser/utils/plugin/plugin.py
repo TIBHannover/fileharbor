@@ -31,16 +31,13 @@ class Plugin:
         return self._config
 
     @classmethod
-    @property
     def default_config(cls):
         return cls._default_config
 
     @classmethod
-    @property
     def version(cls):
         return cls._version
 
     @classmethod
-    @property
     def name(cls):
         return cls._name

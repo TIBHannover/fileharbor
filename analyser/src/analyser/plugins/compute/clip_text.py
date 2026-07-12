@@ -31,6 +31,7 @@ class ClipTextEmbeddingFeature(
         from sklearn.preprocessing import normalize
         import imageio.v3 as iio
         import torch
+        import transformers
         import open_clip
 
         inputs, parameters = self.map_analyser_request_to_dict(plugin_run)
@@ -67,8 +68,8 @@ class ClipTextEmbeddingFeature(
             result.results.append(
                 common_pb2.PluginResult(
                     plugin=self.instance_name,
-                    type=self.name,
-                    version=self.version,
+                    type=self.name(),
+                    version=self.version(),
                     result=data,
                 )
             )

@@ -105,8 +105,8 @@ class ClipClassification(
             result.results.append(
                 common_pb2.PluginResult(
                     plugin=self.instance_name,
-                    type=self.name,
-                    version=self.version,
+                    type=self.name(),
+                    version=self.version(),
                     result=data,
                 )
             )
