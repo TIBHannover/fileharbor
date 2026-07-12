@@ -2,7 +2,10 @@ import logging
 import requests
 from typing import Any, Dict, List, Optional
 from ray import serve
+import ray
+import os
 from ray.serve import Application
+from pathlib import Path
 from analyser.plugins.compute_plugin import ComputePlugin, ComputePluginManager
 from analyser.inference import InferenceServer, InferenceServerFactory
 from google.protobuf.json_format import MessageToDict, ParseDict, Parse
@@ -40,6 +43,28 @@ class RayInferenceServer(InferenceServer):
         compute_plugin_list: List[ComputePlugin],
         compute_plugin_manager: Optional[ComputePluginManager] = None,
     ) -> None:
+
+        # Clear out the leaking container virtual environment tracker
+        os.environ.pop("VIRTUAL_ENV", None)
+
+        app_root = Path("/app")
+        local_modules = [
+            str(app_root / "analyser"),
+            str(app_root / "packages" / "data"),
+            str(app_root / "packages" / "interface"),
+        ]
+
+        # Heavy patterns to completely strip out of the unzipped working environment
+        global_excludes = [
+            "*.jsonl",
+            "**/.venv",
+            "**/__pycache__",
+            "frontend/",
+            "frontend_vue3/",
+            "pyproject.toml",
+            "poetry.lock",
+        ]
+
         for compute_plugin in compute_plugin_list:
             plugin_instance_name = compute_plugin.instance_name
             logging.info("CLS" + plugin_instance_name)
@@ -54,14 +79,23 @@ class RayInferenceServer(InferenceServer):
                 requirements = inference_config["requirements"]
             else:
                 requirements = list()
+
+            # Construct the isolated environment specification
+            runtime_env = {
+                "uv": requirements,
+                # "py_modules": local_modules,
+                "excludes": global_excludes,
+                # Force the Ray worker to completely ignore any inherited VIRTUAL_ENV
+                "env_vars": {"VIRTUAL_ENV": ""},
+            }
             serve.run(
                 app_builder(
                     {
                         "plugin": compute_plugin,
                         "options": {
                             "name": plugin_instance_name,
-                            "ray_actor_options": {"runtime_env": {"uv": requirements}},
-                            "autoscaling_config": {"min_replicas": 1},
+                            "ray_actor_options": {"runtime_env": runtime_env},
+                            "autoscaling_config": {"min_replicas": 0},
                         },
                     }
                 ),
@@ -114,10 +148,3 @@ class RayInferenceServer(InferenceServer):
         except Exception as e:
             logging.error(f"{response} {e}")
             return None
-        # logging.info(f"[AnalyserPluginManager] {run_id} plugin: {plugin_to_run}")
-        # logging.info(f"[AnalyserPluginManager] {run_id} data: {[{k:x.id} for k,x in inputs.items()]}")
-        # logging.info(f"[AnalyserPluginManager] {run_id} parameters: {parameters}")
-        # results = plugin_to_run(inputs, data_manager, parameters, callbacks)
-        # logging.info(f"[AnalyserPluginManager] {run_id} results: {[{k:x.id} for k,x in results.items()]}")
-
-        return results
