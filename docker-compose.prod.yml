@@ -41,7 +41,7 @@ services:
     working_dir: /app/
     environment:
       - HF_HOME=/models
-    command: uv run --package analyser analyser/src/analyser/server.py -v -c analyser/config.toml
+    command: uv run --active --package analyser analyser/src/analyser/server.py -v -c analyser/config.toml
 
   postgres:
     image: postgres:17.5

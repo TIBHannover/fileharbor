@@ -162,18 +162,18 @@ class QDrantIndexer(IndexerPlugin):
                 count += 1
 
         for i, q in enumerate(queries):
-            result = self.client.search(
+            result = self.client.query_points(
                 collection_name="default",
-                query_vector=models.NamedVector(
-                    name=q["index_name"], vector=q["value"]
-                ),
+                query=q["value"],
+                using=q["index_name"],
+                # query=models.NamedVector(name=q["index_name"], vector=q["value"]),
                 query_filter=models.Filter(must=must, should=should, must_not=must_not),
                 limit=size,
                 with_payload=True,
                 with_vectors=True,
             )
             count = 0
-            for x in result:
+            for x in result.points:
                 results.append(
                     {
                         "id": uuid.UUID(x.id).hex,

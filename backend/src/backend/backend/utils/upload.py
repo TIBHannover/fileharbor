@@ -6,8 +6,9 @@ import PIL
 import requests
 from urllib.parse import unquote
 
-import cgi
+# import cgi
 import mimetypes
+from email.message import EmailMessage
 
 
 def check_extension(filename: Path, extensions: list):
@@ -41,7 +42,6 @@ def download_file(file, output_dir, output_name=None, max_size=None, extensions=
         os.makedirs(output_dir, exist_ok=True)
 
         with open(os.path.join(output_dir, output_path), "wb") as f:
-
             for i, chunk in enumerate(file.chunks()):
                 f.write(chunk)
 
@@ -56,24 +56,32 @@ def download_url(url, output_dir, output_name=None, max_size=None, extensions=No
         if response.status_code != 200:
             return {"status": "error", "error": {"type": "downloading_error"}}
 
-        params = cgi.parse_header(response.headers.get("Content-Disposition", ""))[-1]
+        msg = EmailMessage()
+        msg["Content-Disposition"] = response.headers.get("Content-Disposition", "")
+
+        params = msg["Content-Disposition"].params
+        # params = cgi.parse_header(response.headers.get("Content-Disposition", ""))[-1]
         if "filename" in params:
             filename = os.path.basename(params["filename"])
             ext = "".join(Path(filename).suffixes)
             if extensions is not None:
                 if ext not in extensions:
-
-                    return {"status": "error", "error": {"type": "wrong_file_extension"}}
+                    return {
+                        "status": "error",
+                        "error": {"type": "wrong_file_extension"},
+                    }
 
         elif response.headers.get("Content-Type") != None:
-
             ext = mimetypes.guess_extension(response.headers.get("Content-Type"))
             if ext is None:
                 return {"status": "error", "error": {"type": "downloading_error"}}
 
             if extensions is not None:
                 if ext.lower() not in extensions:
-                    return {"status": "error", "error": {"type": "wrong_file_extension"}}
+                    return {
+                        "status": "error",
+                        "error": {"type": "wrong_file_extension"},
+                    }
             filename = url
         else:
             return {"status": "error", "error": {"type": "file_not_found"}}

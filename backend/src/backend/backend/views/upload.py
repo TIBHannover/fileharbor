@@ -1,14 +1,10 @@
 import os
-import sys
-import json
 import uuid
 import logging
 import imageio
 import tempfile
-import traceback
 
 from wand.image import Image
-from urllib.parse import urlparse
 from django.conf import settings
 import PIL.Image
 from rest_framework.views import APIView
@@ -27,8 +23,12 @@ from backend.utils import (
 from backend.tasks import remove_upload_image
 
 
-PIL.Image.warnings.simplefilter("error", PIL.Image.DecompressionBombError)  # turn off Decompression bomb error
-PIL.Image.warnings.simplefilter("error", PIL.Image.DecompressionBombWarning)  # turn off Decompression bomb warning
+PIL.Image.warnings.simplefilter(
+    "error", PIL.Image.DecompressionBombError
+)  # turn off Decompression bomb error
+PIL.Image.warnings.simplefilter(
+    "error", PIL.Image.DecompressionBombWarning
+)  # turn off Decompression bomb warning
 PIL.Image.MAX_IMAGE_PIXELS = 1000000000  # set max pixel up high
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,17 @@ class Upload(APIView):
                 output_name=image_id,
                 file=request.data["file"],
                 max_size=20 * 1024 * 1024,
-                extensions=(".gif", ".jpg", ".jpeg", ".jpe", ".png", ".tif", ".tiff", ".bmp", ".webp"),
+                extensions=(
+                    ".gif",
+                    ".jpg",
+                    ".jpeg",
+                    ".jpe",
+                    ".png",
+                    ".tif",
+                    ".tiff",
+                    ".bmp",
+                    ".webp",
+                ),
             )
         elif request.data.get("url"):
             tmp_dir = tempfile.mkdtemp()
@@ -58,7 +68,17 @@ class Upload(APIView):
                 output_name=image_id,
                 url=request.data["url"],
                 max_size=20 * 1024 * 1024,
-                extensions=(".gif", ".jpg", ".jpeg", ".jpe", ".png", ".tif", ".tiff", ".bmp", ".webp"),
+                extensions=(
+                    ".gif",
+                    ".jpg",
+                    ".jpeg",
+                    ".jpe",
+                    ".png",
+                    ".tif",
+                    ".tiff",
+                    ".bmp",
+                    ".webp",
+                ),
             )
         else:
             image_result = {
@@ -109,8 +129,9 @@ class Upload(APIView):
                     name=image_result["origin"],
                     hash_id=image_id,
                 )
-                remove_upload_image.apply_async((output_path, image_id),
-                                                countdown=60*60*12)
+                remove_upload_image.apply_async(
+                    (output_path, image_id), countdown=60 * 60 * 12
+                )
 
                 return Response(
                     {
