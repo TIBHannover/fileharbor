@@ -8,6 +8,11 @@
       :width="observedWidth"
       :height="height"
     >
+      <g
+        ref="axisEl"
+        class="axis axis--y"
+        :transform="`translate(${marginLeft},0)`"
+      />
       <g ref="gEl">
         <g
           ref="barsEl"
@@ -48,11 +53,6 @@
           @touchend.prevent="onLeave"
         />
 
-        <g
-          ref="axisEl"
-          class="axis axis--y"
-          :transform="`translate(${marginLeft},0)`"
-        />
       </g>
     </svg>
   </div>
@@ -186,7 +186,7 @@ function onMove(evt) {
   const j = d3.bisect(centers, y)
   const j0 = Math.max(0, j - 1)
   const j1 = Math.min(j, centers.length - 1)
-  const i = (y - centers[j0] <= centers[j1] - y) ? j0 : j1  
+  const i = (y - centers[j0] <= centers[j1] - y) ? j0 : j1
 
   const d = binned.value[i]
   const cx = marginLeft.value + xScale(d.count)
